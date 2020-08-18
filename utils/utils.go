@@ -1,9 +1,9 @@
 package utils
 
 import (
-	"io"
 	"crypto/rand"
 	"fmt"
+	"io"
 )
 
 // GenerateUUID returns a UUID as a string based on RFC 4122
