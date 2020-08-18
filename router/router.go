@@ -12,6 +12,8 @@ func InitRouter() *gin.Engine {
 	v1 := r.Group("/api/v1")
 	{
 		v1.GET("/ping", apiV1.Pong)
+
+		v1.POST("/did/create", apiV1.CreateDid)
 	}
 
 	return r
