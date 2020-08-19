@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	ch "github.com/ewangplay/serval/adapter/cryptohub"
 	"github.com/ewangplay/serval/utils"
 	"github.com/gin-gonic/gin"
 )
@@ -25,6 +26,21 @@ type CreateDidResponse struct {
 	Created time.Time `json:"created"`
 }
 
+func getCryptoHub(c *gin.Context) (ch.CryptoHub, error) {
+	obj, exists := c.Get(ch.CryptoHubKey)
+	if !exists {
+		return nil, fmt.Errorf("cyprto hub does not exist in context")
+	}
+	if obj == nil {
+		return nil, fmt.Errorf("cyprto hub in context is nil")
+	}
+	cryptoHub, ok := obj.(ch.CryptoHub)
+	if !ok {
+		return nil, fmt.Errorf("cyprto hub type invalid")
+	}
+	return cryptoHub, nil
+}
+
 // CreateDid handles the /api/v1/did/create request to create a DID
 func CreateDid(c *gin.Context) {
 	// Generate DID
@@ -36,11 +52,19 @@ func CreateDid(c *gin.Context) {
 	created := time.Now()
 
 	// Generate public / private key pair
-	bytePrivateKey := []byte("private key")
-	bytePublicKey := []byte("public key")
+	cryptoHub, err := getCryptoHub(c)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	pubKey, priKey, err := cryptoHub.KeyPair()
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
 	keyPair := &KeyPair{
-		PrivateKey: base64.StdEncoding.EncodeToString(bytePrivateKey),
-		PublicKey:  base64.StdEncoding.EncodeToString(bytePublicKey),
+		PrivateKey: base64.StdEncoding.EncodeToString(priKey.GetPrivateKey()),
+		PublicKey:  base64.StdEncoding.EncodeToString(pubKey.GetPublicKey()),
 	}
 
 	// Response body
