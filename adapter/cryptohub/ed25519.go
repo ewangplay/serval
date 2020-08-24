@@ -2,6 +2,7 @@ package cryptohub
 
 import (
 	"crypto/ed25519"
+	"fmt"
 )
 
 // Ed25519PublicKey represents the ed25519 public key
@@ -29,11 +30,21 @@ func CreateEd25519CryptoHub() *Ed25519CryptoHub {
 	return &Ed25519CryptoHub{}
 }
 
-// KeyPair generates one ed25519 public key and private key pair
-func (ed *Ed25519CryptoHub) KeyPair() (PublicKey, PrivateKey, error) {
+// GenKey generates one ed25519 public key and private key pair
+func (ed *Ed25519CryptoHub) GenKey() (PublicKey, PrivateKey, error) {
 	pubKey, priKey, err := ed25519.GenerateKey(nil)
 	if err != nil {
 		return nil, nil, err
 	}
 	return Ed25519PublicKey(pubKey), Ed25519PrivateKey(priKey), nil
+}
+
+// Sign signs the message with privateKey and returns signature
+func (ed *Ed25519CryptoHub) Sign(privateKey PrivateKey, message []byte) (sigature []byte, err error) {
+	defer func() {
+		if e := recover(); e != nil {
+			err = fmt.Errorf("sign error: %v", e)
+		}
+	}()
+	return ed25519.Sign(ed25519.PrivateKey(privateKey.GetPrivateKey()), message), nil
 }

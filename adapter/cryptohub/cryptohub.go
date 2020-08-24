@@ -17,7 +17,8 @@ type PrivateKey interface {
 
 // CryptoHub represents the crypto hub interface
 type CryptoHub interface {
-	KeyPair() (PublicKey, PrivateKey, error)
+	GenKey() (PublicKey, PrivateKey, error)
+	Sign(PrivateKey, []byte) ([]byte, error)
 }
 
 // Global crypto hub instance
