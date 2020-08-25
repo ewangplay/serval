@@ -3,33 +3,35 @@ package v1
 import (
 	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
+	bc "github.com/ewangplay/serval/adapter/blockchain"
 	ch "github.com/ewangplay/serval/adapter/cryptohub"
 	"github.com/ewangplay/serval/utils"
 	"github.com/gin-gonic/gin"
 )
 
-func getCryptoHub(c *gin.Context) (ch.CryptoHub, error) {
-	obj, exists := c.Get(ch.CryptoHubKey)
-	if !exists {
-		return nil, fmt.Errorf("cyprto hub does not exist in context")
-	}
-	if obj == nil {
-		return nil, fmt.Errorf("cyprto hub in context is nil")
-	}
-	cryptoHub, ok := obj.(ch.CryptoHub)
-	if !ok {
-		return nil, fmt.Errorf("cyprto hub type invalid")
-	}
-	return cryptoHub, nil
-}
-
 // CreateDid handles the /api/v1/did/create request to create a DID
 func CreateDid(c *gin.Context) {
+
+	// Get CryptoHub instance
+	cryptoHub, err := getCryptoHub(c)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	// Get BlockChain instance
+	blockChain, err := getBlockChain(c)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
 	// Generate DID
 	methodName := "gfa"
 	methodSpecificID := strings.ReplaceAll(utils.GenerateUUID(), "-", "")
@@ -37,13 +39,6 @@ func CreateDid(c *gin.Context) {
 
 	// Created time
 	now := time.Now()
-
-	// Get Crypto Hub
-	cryptoHub, err := getCryptoHub(c)
-	if err != nil {
-		c.AbortWithError(http.StatusInternalServerError, err)
-		return
-	}
 
 	// Generate master public / private key pair
 	key1 := fmt.Sprintf("%s#keys-1", did)
@@ -98,6 +93,15 @@ func CreateDid(c *gin.Context) {
 	}
 	fmt.Println("DDO: ", ddo)
 
+	// Submit did / ddo to block chain
+	ddoBytes, err := json.Marshal(ddo)
+	result, err := blockChain.Submit("CreateDID", did, string(ddoBytes))
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	fmt.Printf("Blockchain submit result: %s\n", string(result))
+
 	// Response body
 	respBody := CreateDidResponse{
 		Did:     did,
@@ -119,4 +123,34 @@ func CreateDid(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, respBody)
+}
+
+func getCryptoHub(c *gin.Context) (ch.CryptoHub, error) {
+	obj, exists := c.Get(ch.CryptoHubKey)
+	if !exists {
+		return nil, fmt.Errorf("cyprto hub instance does not exist in context")
+	}
+	if obj == nil {
+		return nil, fmt.Errorf("cyprto hub instance in context is nil")
+	}
+	cryptoHub, ok := obj.(ch.CryptoHub)
+	if !ok {
+		return nil, fmt.Errorf("cyprto hub instance type is invalid")
+	}
+	return cryptoHub, nil
+}
+
+func getBlockChain(c *gin.Context) (bc.BlockChain, error) {
+	obj, exists := c.Get(bc.BlockChainKey)
+	if !exists {
+		return nil, fmt.Errorf("block chain instance does not exist in context")
+	}
+	if obj == nil {
+		return nil, fmt.Errorf("block chain instance in context is nil")
+	}
+	blockChain, ok := obj.(bc.BlockChain)
+	if !ok {
+		return nil, fmt.Errorf("block chain instance type is invalid")
+	}
+	return blockChain, nil
 }
