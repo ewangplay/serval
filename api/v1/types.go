@@ -12,12 +12,17 @@ type Key struct {
 	PublicKeyHex  string  `json:"publicKeyHex"`
 }
 
-// CreateDidResponse represents the response structure
-// that requests the creation of did.
+// CreateDidResponse represents the CreateDid response
 type CreateDidResponse struct {
 	Did     string    `json:"did"`
 	Key     []*Key    `json:"key"`
 	Created time.Time `json:"created"`
+}
+
+// ResolveDidResponse represents the ResolveDid response
+type ResolveDidResponse struct {
+	Did      string `json:"did"`
+	Document *DDO   `json:"document"`
 }
 
 // KeyType represents key type

@@ -16,6 +16,7 @@ func InitRouter() *gin.Engine {
 		v1.GET("/ping", apiV1.Pong)
 
 		v1.POST("/did/create", apiV1.CreateDid)
+		v1.GET("/did/resolve/:did", apiV1.ResolveDid)
 	}
 
 	return r

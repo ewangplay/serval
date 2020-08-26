@@ -125,6 +125,40 @@ func CreateDid(c *gin.Context) {
 	c.JSON(http.StatusOK, respBody)
 }
 
+// ResolveDid handles the /api/v1/did/resolve request to resolve a DID
+// Request URL: http://IP:Port/api/v1/did/resolve/:did
+func ResolveDid(c *gin.Context) {
+	// Retrieve did from path param
+	did := c.Param("did")
+
+	// Get BlockChain instance
+	blockChain, err := getBlockChain(c)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	// Query DDO from blockchain
+	result, err := blockChain.Evaluate("QueryDID", did)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	var ddo DDO
+	err = json.Unmarshal(result, &ddo)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	// Response body
+	respBody := ResolveDidResponse{
+		Did:      did,
+		Document: &ddo,
+	}
+	c.JSON(http.StatusOK, respBody)
+}
+
 func getCryptoHub(c *gin.Context) (ch.CryptoHub, error) {
 	obj, exists := c.Get(ch.CryptoHubKey)
 	if !exists {
