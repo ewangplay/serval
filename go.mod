@@ -7,5 +7,6 @@ require (
 	github.com/gin-gonic/gin v1.6.3
 	github.com/hyperledger/fabric-contract-api-go v1.1.0
 	github.com/hyperledger/fabric-sdk-go v1.0.0-beta2
+	github.com/spf13/viper v1.3.2
 	golang.org/x/sys v0.0.0-20200323222414-85ca7c5b95cd // indirect
 )

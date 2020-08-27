@@ -1,0 +1,13 @@
+server:
+    port: 8099
+
+blockchain:
+    hlfabric:
+        channelName: mychannel
+        contractID: did
+        mspID: Org1MSP
+        walletPath: /path/to/wallet
+        ccpPath: /path/to/connection-org1.yaml
+        appUser:
+            Name: appUser
+            mspPath: /path/to/appUser/msp

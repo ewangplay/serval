@@ -8,16 +8,29 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/gateway"
+	"github.com/spf13/viper"
 )
 
-// Constants definition
-const (
-	ConfigPath   = "."
-	IdentityName = "appUser"
-	ChannelName  = "mychannel"
-	ContractID   = "did"
-	MSPID        = "Org1MSP"
+// package-level variables definition
+var (
+	ChannelName    = "mychannel"
+	ContractID     = "did"
+	MSPID          = "Org1MSP"
+	CCPPath        = "connection-org1.yaml"
+	WalletPath     = "wallet"
+	AppUserName    = "appUser"
+	AppUserMSPPath = "msp"
 )
+
+func init() {
+	ChannelName = viper.GetString("blockchain.hlfabric.channelName")
+	ContractID = viper.GetString("blockchain.hlfabric.contractID")
+	MSPID = viper.GetString("blockchain.hlfabric.mspID")
+	WalletPath = viper.GetString("blockchain.hlfabric.walletPath")
+	CCPPath = viper.GetString("blockchain.hlfabric.ccpPath")
+	AppUserName = viper.GetString("blockchain.hlfabric.appUser.Name")
+	AppUserMSPPath = viper.GetString("blockchain.hlfabric.appUser.mspPath")
+}
 
 // HLFabricBlockChain represents hyperledger fabric blockchain
 type HLFabricBlockChain struct {
@@ -30,14 +43,13 @@ type HLFabricBlockChain struct {
 // CreateHLFabricBlockChain creates an instance of ed25519 crypto hub
 func CreateHLFabricBlockChain() (*HLFabricBlockChain, error) {
 
-	walletPath := filepath.Join(ConfigPath, "wallet")
-	wallet, err := gateway.NewFileSystemWallet(walletPath)
+	wallet, err := gateway.NewFileSystemWallet(WalletPath)
 	if err != nil {
 		fmt.Printf("Failed to create wallet: %s\n", err)
 		return nil, err
 	}
 
-	if !wallet.Exists(IdentityName) {
+	if !wallet.Exists(AppUserName) {
 		err = populateWallet(wallet)
 		if err != nil {
 			fmt.Printf("Failed to populate wallet contents: %s\n", err)
@@ -45,15 +57,9 @@ func CreateHLFabricBlockChain() (*HLFabricBlockChain, error) {
 		}
 	}
 
-	ccpPath := filepath.Join(
-		ConfigPath,
-		"blockchain",
-		"connection-org1.yaml",
-	)
-
 	gw, err := gateway.Connect(
-		gateway.WithConfig(config.FromFile(filepath.Clean(ccpPath))),
-		gateway.WithIdentity(wallet, IdentityName),
+		gateway.WithConfig(config.FromFile(filepath.Clean(CCPPath))),
+		gateway.WithIdentity(wallet, AppUserName),
 	)
 	if err != nil {
 		fmt.Printf("Failed to connect to gateway: %s\n", err)
@@ -79,21 +85,14 @@ func CreateHLFabricBlockChain() (*HLFabricBlockChain, error) {
 }
 
 func populateWallet(wallet *gateway.Wallet) error {
-	credPath := filepath.Join(
-		ConfigPath,
-		"blockchain",
-		"appUser",
-		"msp",
-	)
-
 	// read the certificate pem
-	certPath := filepath.Join(credPath, "signcerts", "cert.pem")
+	certPath := filepath.Join(AppUserMSPPath, "signcerts", "cert.pem")
 	cert, err := ioutil.ReadFile(filepath.Clean(certPath))
 	if err != nil {
 		return err
 	}
 
-	keyDir := filepath.Join(credPath, "keystore")
+	keyDir := filepath.Join(AppUserMSPPath, "keystore")
 	// there's a single file in this dir containing the private key
 	files, err := ioutil.ReadDir(keyDir)
 	if err != nil {
@@ -110,7 +109,7 @@ func populateWallet(wallet *gateway.Wallet) error {
 
 	identity := gateway.NewX509Identity(MSPID, string(cert), string(key))
 
-	err = wallet.Put(IdentityName, identity)
+	err = wallet.Put(AppUserName, identity)
 	if err != nil {
 		return err
 	}
