@@ -2,6 +2,8 @@ package utils
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 )
@@ -31,4 +33,12 @@ func GenerateBytesUUID() []byte {
 
 func uuidBytesToStr(uuid []byte) string {
 	return fmt.Sprintf("%x-%x-%x-%x-%x", uuid[0:4], uuid[4:6], uuid[6:8], uuid[8:10], uuid[10:])
+}
+
+// SHA256 returns the SHA256 checksum of the data.
+func SHA256(data []byte) string {
+	h := sha256.New()
+	h.Write(data)
+	cs := h.Sum(nil)
+	return hex.EncodeToString(cs)
 }

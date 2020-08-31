@@ -13,27 +13,25 @@ import (
 	ch "github.com/ewangplay/serval/adapter/cryptohub"
 	"github.com/ewangplay/serval/utils"
 	"github.com/gin-gonic/gin"
+	"github.com/spf13/viper"
 )
+
+var appKey *Key
+
+func init() {
+	appKey = &Key{
+		ID:            viper.GetString("appKey.id"),
+		Type:          KeyType(viper.GetString("appKey.type")),
+		PrivateKeyHex: viper.GetString("appKey.privateKeyHex"),
+		PublicKeyHex:  viper.GetString("appKey.publicKeyHex"),
+	}
+}
 
 // CreateDid handles the /api/v1/did/create request to create a DID
 func CreateDid(c *gin.Context) {
 
-	// Get CryptoHub instance
-	cryptoHub, err := getCryptoHub(c)
-	if err != nil {
-		c.AbortWithError(http.StatusInternalServerError, err)
-		return
-	}
-
-	// Get BlockChain instance
-	blockChain, err := getBlockChain(c)
-	if err != nil {
-		c.AbortWithError(http.StatusInternalServerError, err)
-		return
-	}
-
 	// Generate DID
-	methodName := "gfa"
+	methodName := "example"
 	methodSpecificID := strings.ReplaceAll(utils.GenerateUUID(), "-", "")
 	did := fmt.Sprintf("did:%s:%s", methodName, methodSpecificID)
 
@@ -42,14 +40,16 @@ func CreateDid(c *gin.Context) {
 
 	// Generate master public / private key pair
 	key1 := fmt.Sprintf("%s#keys-1", did)
-	pubKey1, priKey1, err := cryptoHub.GenKey()
+	pubKey1, priKey1, err := ch.GetCryptoHub().GenKey()
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
-	// Use master private key to sign self public key
-	signature, err := cryptoHub.Sign(priKey1, pubKey1.GetPublicKey())
+	// Use master private key to sign did
+	// Once an entity's DID is generated,
+	// it does not change, so signing did is appropriate.
+	signature, err := ch.GetCryptoHub().Sign(priKey1, []byte(did))
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
@@ -57,7 +57,7 @@ func CreateDid(c *gin.Context) {
 
 	// Generate standby public / private key pair
 	key2 := fmt.Sprintf("%s#keys-2", did)
-	pubKey2, priKey2, err := cryptoHub.GenKey()
+	pubKey2, priKey2, err := ch.GetCryptoHub().GenKey()
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
@@ -83,7 +83,7 @@ func CreateDid(c *gin.Context) {
 		Controller:     did,
 		Authentication: []string{key1},
 		Recovery:       []string{key2},
-		Proof: Proof{
+		Proof: &Proof{
 			Type:           Ed25519Key,
 			Creator:        key1,
 			SignatureValue: base64.StdEncoding.EncodeToString(signature),
@@ -93,9 +93,37 @@ func CreateDid(c *gin.Context) {
 	}
 	fmt.Println("DDO: ", ddo)
 
-	// Submit did / ddo to block chain
-	ddoBytes, err := json.Marshal(ddo)
-	result, err := blockChain.Submit("CreateDID", did, string(ddoBytes))
+	// Hash DID Document
+	ddoBytes, _ := json.Marshal(ddo)
+	hash := utils.SHA256(ddoBytes)
+
+	// Use application private key to sign DID Document content
+	appPriKey, err := hex.DecodeString(appKey.PrivateKeyHex)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	signature, err = ch.GetCryptoHub().Sign(ch.Ed25519PrivateKey(appPriKey), []byte(hash))
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	// Build DID Context
+	didPkg := &DIDPackage{
+		Did:      did,
+		Document: ddoBytes,
+		Hash:     hash,
+		ProviderProof: &Proof{
+			Type:           appKey.Type,
+			Creator:        appKey.ID,
+			SignatureValue: base64.StdEncoding.EncodeToString(signature),
+		},
+	}
+
+	// Submit did context to block chain
+	didPkgBytes, _ := json.Marshal(didPkg)
+	result, err := bc.GetBlockChain().Submit("CreateDID", did, string(didPkgBytes))
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
@@ -131,21 +159,27 @@ func ResolveDid(c *gin.Context) {
 	// Retrieve did from path param
 	did := c.Param("did")
 
-	// Get BlockChain instance
-	blockChain, err := getBlockChain(c)
+	// Query DDO from blockchain
+	result, err := bc.GetBlockChain().Evaluate("QueryDID", did)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	var didPkg DIDPackage
+	err = json.Unmarshal(result, &didPkg)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	// Verify DID Document
+	err = verifyDIDPackage(did, &didPkg)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
-	// Query DDO from blockchain
-	result, err := blockChain.Evaluate("QueryDID", did)
-	if err != nil {
-		c.AbortWithError(http.StatusInternalServerError, err)
-		return
-	}
 	var ddo DDO
-	err = json.Unmarshal(result, &ddo)
+	err = json.Unmarshal(didPkg.Document, &ddo)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
@@ -159,32 +193,51 @@ func ResolveDid(c *gin.Context) {
 	c.JSON(http.StatusOK, respBody)
 }
 
-func getCryptoHub(c *gin.Context) (ch.CryptoHub, error) {
-	obj, exists := c.Get(ch.CryptoHubKey)
-	if !exists {
-		return nil, fmt.Errorf("cyprto hub instance does not exist in context")
-	}
-	if obj == nil {
-		return nil, fmt.Errorf("cyprto hub instance in context is nil")
-	}
-	cryptoHub, ok := obj.(ch.CryptoHub)
-	if !ok {
-		return nil, fmt.Errorf("cyprto hub instance type is invalid")
-	}
-	return cryptoHub, nil
-}
+func verifyDIDPackage(did string, didPkg *DIDPackage) error {
+	var err error
 
-func getBlockChain(c *gin.Context) (bc.BlockChain, error) {
-	obj, exists := c.Get(bc.BlockChainKey)
-	if !exists {
-		return nil, fmt.Errorf("block chain instance does not exist in context")
+	// Verify DID Identifier
+	if did != didPkg.Did {
+		err = fmt.Errorf("got did %v, want %v", didPkg.Did, did)
+		return err
 	}
-	if obj == nil {
-		return nil, fmt.Errorf("block chain instance in context is nil")
+
+	// Verify DID Document hash value
+	hash := utils.SHA256(didPkg.Document)
+	if hash != didPkg.Hash {
+		err = fmt.Errorf("DID Document hash does not match to actual")
+		return err
 	}
-	blockChain, ok := obj.(bc.BlockChain)
-	if !ok {
-		return nil, fmt.Errorf("block chain instance type is invalid")
+
+	// Verify provider signature
+	if didPkg.ProviderProof == nil {
+		err = fmt.Errorf("no provider proof")
+		return err
 	}
-	return blockChain, nil
+	if didPkg.ProviderProof.Creator != appKey.ID {
+		err = fmt.Errorf("provider did does not match")
+		return err
+	}
+	if didPkg.ProviderProof.Type != appKey.Type {
+		err = fmt.Errorf("signature algorithm not match")
+		return err
+	}
+	appPubKey, err := hex.DecodeString(appKey.PublicKeyHex)
+	if err != nil {
+		return err
+	}
+	signature, err := base64.StdEncoding.DecodeString(didPkg.ProviderProof.SignatureValue)
+	if err != nil {
+		return err
+	}
+	valid, err := ch.GetCryptoHub().Verify(ch.Ed25519PublicKey(appPubKey), []byte(hash), signature)
+	if err != nil {
+		return err
+	}
+	if !valid {
+		err = fmt.Errorf("verify signature fail")
+		return err
+	}
+
+	return nil
 }

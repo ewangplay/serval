@@ -11,3 +11,9 @@ blockchain:
         appUser:
             Name: appUser
             mspPath: /path/to/appUser/msp
+
+appKey:
+    id: "did:example:6d3e94db056a494f9843ca377b3dfca9#keys-1"
+    type: Ed25519
+    privateKeyHex: 8f56b044cf1a9d67cd162231770306e26b4a2a1aec8d8828342c8c38109d5be7d3be88a13d2f814392843e7bf1fddab9416dc96a527d77874fab831e29dcf9fd
+    publicKeyHex: d3be88a13d2f814392843e7bf1fddab9416dc96a527d77874fab831e29dcf9fd

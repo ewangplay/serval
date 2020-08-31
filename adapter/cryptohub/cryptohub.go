@@ -1,10 +1,5 @@
 package cryptohub
 
-// Constants definition
-const (
-	CryptoHubKey = "CryptoHub"
-)
-
 // PublicKey represents the public key interface
 type PublicKey interface {
 	GetPublicKey() []byte
@@ -17,8 +12,9 @@ type PrivateKey interface {
 
 // CryptoHub represents the crypto hub interface
 type CryptoHub interface {
-	GenKey() (PublicKey, PrivateKey, error)
-	Sign(PrivateKey, []byte) ([]byte, error)
+	GenKey() (publicKey PublicKey, privateKey PrivateKey, err error)
+	Sign(privateKey PrivateKey, message []byte) (signature []byte, err error)
+	Verify(publicKey PublicKey, message []byte, signature []byte) (valid bool, err error)
 }
 
 // Global crypto hub instance

@@ -1,10 +1,5 @@
 package blockchain
 
-// Constants definition
-const (
-	BlockChainKey = "BlockChain"
-)
-
 // BlockChain represents the block chain interface
 type BlockChain interface {
 	Submit(string, ...string) ([]byte, error)

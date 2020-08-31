@@ -2,14 +2,12 @@ package router
 
 import (
 	apiV1 "github.com/ewangplay/serval/api/v1"
-	mw "github.com/ewangplay/serval/middleware"
 	"github.com/gin-gonic/gin"
 )
 
 // InitRouter initializes the HTTP router
 func InitRouter() *gin.Engine {
 	r := gin.Default()
-	r.Use(mw.Adapter())
 
 	v1 := r.Group("/api/v1")
 	{

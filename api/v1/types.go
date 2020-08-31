@@ -72,7 +72,15 @@ type DDO struct {
 	Authentication []string    `json:"authentication"`
 	Recovery       []string    `json:"recovery"`
 	Service        []Service   `json:"service"`
-	Proof          Proof       `json:"proof"`
+	Proof          *Proof      `json:"proof"`
 	Created        time.Time   `json:"created"`
 	Updated        time.Time   `json:"updated"`
+}
+
+// DIDPackage represents DID context which contains all infomations for DID
+type DIDPackage struct {
+	Did           string `json:"did"`
+	Document      []byte `json:"document"`
+	Hash          string `json:"hash"`
+	ProviderProof *Proof `json:"providerProof"`
 }

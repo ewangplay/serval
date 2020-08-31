@@ -48,3 +48,9 @@ func (ed *Ed25519CryptoHub) Sign(privateKey PrivateKey, message []byte) (sigatur
 	}()
 	return ed25519.Sign(ed25519.PrivateKey(privateKey.GetPrivateKey()), message), nil
 }
+
+// Verify verifies signature against publicKey and message
+func (ed *Ed25519CryptoHub) Verify(publicKey PublicKey, message []byte, signature []byte) (valid bool, err error) {
+	valid = ed25519.Verify(ed25519.PublicKey(publicKey.GetPublicKey()), message, signature)
+	return valid, nil
+}
