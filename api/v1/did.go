@@ -11,6 +11,7 @@ import (
 
 	bc "github.com/ewangplay/serval/adapter/blockchain"
 	ch "github.com/ewangplay/serval/adapter/cryptohub"
+	"github.com/ewangplay/serval/log"
 	"github.com/ewangplay/serval/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
@@ -42,6 +43,7 @@ func CreateDid(c *gin.Context) {
 	key1 := fmt.Sprintf("%s#keys-1", did)
 	pubKey1, priKey1, err := ch.GetCryptoHub().GenKey()
 	if err != nil {
+		log.Error("Gen master key pair failed: %v", err)
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
@@ -51,6 +53,7 @@ func CreateDid(c *gin.Context) {
 	// it does not change, so signing did is appropriate.
 	signature, err := ch.GetCryptoHub().Sign(priKey1, []byte(did))
 	if err != nil {
+		log.Error("Self signing failed: %v", err)
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
@@ -59,6 +62,7 @@ func CreateDid(c *gin.Context) {
 	key2 := fmt.Sprintf("%s#keys-2", did)
 	pubKey2, priKey2, err := ch.GetCryptoHub().GenKey()
 	if err != nil {
+		log.Error("Gen standby key pair failed: %v", err)
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
@@ -91,7 +95,8 @@ func CreateDid(c *gin.Context) {
 		Created: now,
 		Updated: now,
 	}
-	fmt.Println("DDO: ", ddo)
+
+	log.Debug("DDO: %v", ddo)
 
 	// Hash DID Document
 	ddoBytes, _ := json.Marshal(ddo)
@@ -100,11 +105,13 @@ func CreateDid(c *gin.Context) {
 	// Use application private key to sign DID Document content
 	appPriKey, err := hex.DecodeString(appKey.PrivateKeyHex)
 	if err != nil {
+		log.Error("Load app private key failed: %v", err)
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 	signature, err = ch.GetCryptoHub().Sign(ch.Ed25519PrivateKey(appPriKey), []byte(hash))
 	if err != nil {
+		log.Error("Provider signing failed: %v", err)
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
@@ -125,10 +132,11 @@ func CreateDid(c *gin.Context) {
 	didPkgBytes, _ := json.Marshal(didPkg)
 	result, err := bc.GetBlockChain().Submit("CreateDID", did, string(didPkgBytes))
 	if err != nil {
+		log.Error("Submit did document to blockchain failed: %v", err)
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
-	fmt.Printf("Blockchain submit result: %s\n", string(result))
+	log.Info("Blockchain submit result: %s", string(result))
 
 	// Response body
 	respBody := CreateDidResponse{
@@ -150,6 +158,8 @@ func CreateDid(c *gin.Context) {
 		},
 	}
 
+	log.Debug("CreateDID response: %v", respBody)
+
 	c.JSON(http.StatusOK, respBody)
 }
 
@@ -162,18 +172,24 @@ func ResolveDid(c *gin.Context) {
 	// Query DDO from blockchain
 	result, err := bc.GetBlockChain().Evaluate("QueryDID", did)
 	if err != nil {
+		log.Error("Query DID Document from blockchain failed: %v", err)
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
+
+	log.Debug("Blockchain query result: %v", string(result))
+
 	var didPkg DIDPackage
 	err = json.Unmarshal(result, &didPkg)
 	if err != nil {
+		log.Error("Parse DID Package failed: %v", err)
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 	// Verify DID Document
 	err = verifyDIDPackage(did, &didPkg)
 	if err != nil {
+		log.Error("Verify DID Package failed: %v", err)
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
@@ -181,6 +197,7 @@ func ResolveDid(c *gin.Context) {
 	var ddo DDO
 	err = json.Unmarshal(didPkg.Document, &ddo)
 	if err != nil {
+		log.Error("Parse DID Document failed: %v", err)
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
@@ -190,6 +207,9 @@ func ResolveDid(c *gin.Context) {
 		Did:      did,
 		Document: &ddo,
 	}
+
+	log.Debug("ResolveDid response: %v", respBody)
+
 	c.JSON(http.StatusOK, respBody)
 }
 

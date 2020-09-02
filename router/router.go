@@ -1,13 +1,18 @@
 package router
 
 import (
+	"io"
+
 	apiV1 "github.com/ewangplay/serval/api/v1"
 	"github.com/gin-gonic/gin"
 )
 
 // InitRouter initializes the HTTP router
-func InitRouter() *gin.Engine {
-	r := gin.Default()
+func InitRouter(w io.Writer) *gin.Engine {
+	r := gin.New()
+	// Recovery middleware recovers from any panics and writes a 500 if there was one.
+	r.Use(gin.Recovery())
+	r.Use(gin.LoggerWithWriter(w))
 
 	v1 := r.Group("/api/v1")
 	{
