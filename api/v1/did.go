@@ -130,7 +130,7 @@ func CreateDid(c *gin.Context) {
 
 	// Submit did context to block chain
 	didPkgBytes, _ := json.Marshal(didPkg)
-	result, err := bc.GetBlockChain().Submit("CreateDID", did, string(didPkgBytes))
+	result, err := bc.Submit("CreateDID", did, string(didPkgBytes))
 	if err != nil {
 		log.Error("Submit did document to blockchain failed: %v", err)
 		c.AbortWithError(http.StatusInternalServerError, err)
@@ -170,7 +170,7 @@ func ResolveDid(c *gin.Context) {
 	did := c.Param("did")
 
 	// Query DDO from blockchain
-	result, err := bc.GetBlockChain().Evaluate("QueryDID", did)
+	result, err := bc.Evaluate("QueryDID", did)
 	if err != nil {
 		log.Error("Query DID Document from blockchain failed: %v", err)
 		c.AbortWithError(http.StatusInternalServerError, err)

@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/ewangplay/rwriter"
+	bc "github.com/ewangplay/serval/adapter/blockchain"
 	"github.com/ewangplay/serval/config"
 	"github.com/ewangplay/serval/log"
 	"github.com/ewangplay/serval/router"
@@ -48,6 +49,26 @@ func main() {
 	err = log.InitLogger(logCfg)
 	if err != nil {
 		fmt.Printf("Init logger failed: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Init Blockchain
+	bcCfg := &bc.Config{
+		HLFabric: &bc.HLFabricConfig{
+			ChannelName: viper.GetString("blockchain.hlfabric.channelName"),
+			ContractID:  viper.GetString("blockchain.hlfabric.contractID"),
+			MspID:       viper.GetString("blockchain.hlfabric.mspID"),
+			WalletPath:  viper.GetString("blockchain.hlfabric.walletPath"),
+			CcpPath:     viper.GetString("blockchain.hlfabric.ccpPath"),
+			AppUser: bc.AppUser{
+				Name:    viper.GetString("blockchain.hlfabric.appUser.Name"),
+				MspPath: viper.GetString("blockchain.hlfabric.appUser.mspPath"),
+			},
+		},
+	}
+	err = bc.InitBlockChain(bcCfg)
+	if err != nil {
+		fmt.Printf("Init blochchain failed: %v\n", err)
 		os.Exit(1)
 	}
 

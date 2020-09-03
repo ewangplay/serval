@@ -8,49 +8,43 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/gateway"
-	"github.com/spf13/viper"
 )
 
-// package-level variables definition
-var (
-	ChannelName    = "mychannel"
-	ContractID     = "did"
-	MSPID          = "Org1MSP"
-	CCPPath        = "connection-org1.yaml"
-	WalletPath     = "wallet"
-	AppUserName    = "appUser"
-	AppUserMSPPath = "msp"
-)
-
-func init() {
-	ChannelName = viper.GetString("blockchain.hlfabric.channelName")
-	ContractID = viper.GetString("blockchain.hlfabric.contractID")
-	MSPID = viper.GetString("blockchain.hlfabric.mspID")
-	WalletPath = viper.GetString("blockchain.hlfabric.walletPath")
-	CCPPath = viper.GetString("blockchain.hlfabric.ccpPath")
-	AppUserName = viper.GetString("blockchain.hlfabric.appUser.Name")
-	AppUserMSPPath = viper.GetString("blockchain.hlfabric.appUser.mspPath")
+// AppUser defines hlfabric app user
+type AppUser struct {
+	Name    string
+	MspPath string
 }
 
-// HLFabricBlockChain represents hyperledger fabric blockchain
-type HLFabricBlockChain struct {
+// HLFabricConfig defines hlfabric config
+type HLFabricConfig struct {
+	ChannelName string
+	ContractID  string
+	MspID       string
+	WalletPath  string
+	CcpPath     string
+	AppUser     AppUser
+}
+
+// HLFabric represents hyperledger fabric blockchain
+type HLFabric struct {
 	wallet   *gateway.Wallet
 	gateway  *gateway.Gateway
 	network  *gateway.Network
 	contract *gateway.Contract
 }
 
-// CreateHLFabricBlockChain creates an instance of ed25519 crypto hub
-func CreateHLFabricBlockChain() (*HLFabricBlockChain, error) {
+// CreateHLFabric creates an instance of ed25519 crypto hub
+func CreateHLFabric(cfg *HLFabricConfig) (*HLFabric, error) {
 
-	wallet, err := gateway.NewFileSystemWallet(WalletPath)
+	wallet, err := gateway.NewFileSystemWallet(cfg.WalletPath)
 	if err != nil {
 		fmt.Printf("Failed to create wallet: %s\n", err)
 		return nil, err
 	}
 
-	if !wallet.Exists(AppUserName) {
-		err = populateWallet(wallet)
+	if !wallet.Exists(cfg.AppUser.Name) {
+		err = populateWallet(wallet, cfg.MspID, &cfg.AppUser)
 		if err != nil {
 			fmt.Printf("Failed to populate wallet contents: %s\n", err)
 			return nil, err
@@ -58,23 +52,23 @@ func CreateHLFabricBlockChain() (*HLFabricBlockChain, error) {
 	}
 
 	gw, err := gateway.Connect(
-		gateway.WithConfig(config.FromFile(filepath.Clean(CCPPath))),
-		gateway.WithIdentity(wallet, AppUserName),
+		gateway.WithConfig(config.FromFile(filepath.Clean(cfg.CcpPath))),
+		gateway.WithIdentity(wallet, cfg.AppUser.Name),
 	)
 	if err != nil {
 		fmt.Printf("Failed to connect to gateway: %s\n", err)
 		return nil, err
 	}
 
-	network, err := gw.GetNetwork(ChannelName)
+	network, err := gw.GetNetwork(cfg.ChannelName)
 	if err != nil {
 		fmt.Printf("Failed to get network: %s\n", err)
 		return nil, err
 	}
 
-	contract := network.GetContract(ContractID)
+	contract := network.GetContract(cfg.ContractID)
 
-	hlf := &HLFabricBlockChain{
+	hlf := &HLFabric{
 		wallet:   wallet,
 		gateway:  gw,
 		network:  network,
@@ -84,15 +78,15 @@ func CreateHLFabricBlockChain() (*HLFabricBlockChain, error) {
 	return hlf, nil
 }
 
-func populateWallet(wallet *gateway.Wallet) error {
+func populateWallet(wallet *gateway.Wallet, mspID string, appUser *AppUser) error {
 	// read the certificate pem
-	certPath := filepath.Join(AppUserMSPPath, "signcerts", "cert.pem")
+	certPath := filepath.Join(appUser.MspPath, "signcerts", "cert.pem")
 	cert, err := ioutil.ReadFile(filepath.Clean(certPath))
 	if err != nil {
 		return err
 	}
 
-	keyDir := filepath.Join(AppUserMSPPath, "keystore")
+	keyDir := filepath.Join(appUser.MspPath, "keystore")
 	// there's a single file in this dir containing the private key
 	files, err := ioutil.ReadDir(keyDir)
 	if err != nil {
@@ -107,9 +101,9 @@ func populateWallet(wallet *gateway.Wallet) error {
 		return err
 	}
 
-	identity := gateway.NewX509Identity(MSPID, string(cert), string(key))
+	identity := gateway.NewX509Identity(mspID, string(cert), string(key))
 
-	err = wallet.Put(AppUserName, identity)
+	err = wallet.Put(appUser.Name, identity)
 	if err != nil {
 		return err
 	}
@@ -117,11 +111,11 @@ func populateWallet(wallet *gateway.Wallet) error {
 }
 
 // Submit will submit a transaction to the ledger
-func (hlf *HLFabricBlockChain) Submit(fn string, args ...string) ([]byte, error) {
+func (hlf *HLFabric) Submit(fn string, args ...string) ([]byte, error) {
 	return hlf.contract.SubmitTransaction(fn, args...)
 }
 
 // Evaluate will evaluate a transaction function and return its results
-func (hlf *HLFabricBlockChain) Evaluate(fn string, args ...string) ([]byte, error) {
+func (hlf *HLFabric) Evaluate(fn string, args ...string) ([]byte, error) {
 	return hlf.contract.EvaluateTransaction(fn, args...)
 }
