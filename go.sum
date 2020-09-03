@@ -71,6 +71,10 @@ github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZm
 github.com/dgryski/go-sip13 v0.0.0-20181026042036-e10d5fee7954/go.mod h1:vAd38F8PWV+bWy6jNmig1y/TA+kYO4g3RSRF0IAv0no=
 github.com/ewangplay/eventbus v0.0.0-20200813063433-1ab53709d936 h1:GU3cRdkK/kkYBSn23tDwRi1eZcYoga17L9XtIO2LVGM=
 github.com/ewangplay/eventbus v0.0.0-20200813063433-1ab53709d936/go.mod h1:0fuKGajt8upC+voZphfD8AL7bbQp1DUWK/Pmc9tt6BI=
+github.com/ewangplay/rwriter v0.0.0-20200903065635-a95e48a7a2cd h1:rxB1F9CKiOP11OLFhttI7V9tc8oIZbJgUde3hqRE8/w=
+github.com/ewangplay/rwriter v0.0.0-20200903065635-a95e48a7a2cd/go.mod h1:GrP7sL6aOe1c1HQnWHCdDV4Wim8E1s8rXr3jeinQXLA=
+github.com/ewangplay/rwriter v0.1.0 h1:woNKLjBQ7R2V0/TP0QCPL6usOMCCOtufaCvDT48P1xM=
+github.com/ewangplay/rwriter v0.1.0/go.mod h1:GrP7sL6aOe1c1HQnWHCdDV4Wim8E1s8rXr3jeinQXLA=
 github.com/fatih/color v1.7.0/go.mod h1:Zm6kSWBoL9eyXnKyktHP6abPY2pDugNf5KwzbycvMj4=
 github.com/fsnotify/fsnotify v1.4.7 h1:IXs+QLmnXW2CcXuY+8Mzv/fWEsPGWxqefPtCP5CnV9I=
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=

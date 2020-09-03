@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/ewangplay/rwriter"
 	"github.com/ewangplay/serval/config"
 	"github.com/ewangplay/serval/log"
 	"github.com/ewangplay/serval/router"
@@ -25,13 +26,13 @@ func main() {
 
 	// New Rotate Writer
 	var w io.Writer
-	rwCfg := &log.RotateWriterConfig{
+	rwCfg := &rwriter.RotateWriterConfig{
 		Module:      "serval",
 		Path:        viper.GetString("log.path"),
 		MaxSize:     viper.GetInt64("log.maxSize"),
 		RotateDaily: viper.GetBool("log.rotateDaily"),
 	}
-	w, err = log.NewRotateWriter(rwCfg)
+	w, err = rwriter.NewRotateWriter(rwCfg)
 	if err != nil {
 		fmt.Printf("Create rotate writer failed: %v\n", err)
 		os.Exit(1)

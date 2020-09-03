@@ -7,6 +7,7 @@ require (
 	github.com/arxanfintech/go-logger v0.0.0-20170606045036-fef5c599e538
 	github.com/btcsuite/btcutil v1.0.2
 	github.com/ewangplay/eventbus v0.0.0-20200813063433-1ab53709d936
+	github.com/ewangplay/rwriter v0.1.0
 	github.com/gin-gonic/gin v1.6.3
 	github.com/hyperledger/fabric-contract-api-go v1.1.0
 	github.com/hyperledger/fabric-sdk-go v1.0.0-beta2
