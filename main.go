@@ -28,7 +28,7 @@ func main() {
 
 	// New Rotate Writer
 	var w io.Writer
-	rwCfg := &rwriter.RotateWriterConfig{
+	rwCfg := &rwriter.Config{
 		Module:      "serval",
 		Path:        viper.GetString("log.path"),
 		MaxSize:     viper.GetInt64("log.maxSize"),
