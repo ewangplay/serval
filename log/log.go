@@ -17,7 +17,8 @@ type LoggerConfig struct {
 
 var gLogger *l.Logger
 
-// InitLogger init logger instance
+// InitLogger initializes logger instance
+// This method MUST be called before calling any other method.
 func InitLogger(conf *LoggerConfig) (err error) {
 	// If logger has been initialized, return directly
 	if gLogger != nil {
@@ -55,40 +56,36 @@ func parseLogLevel(levelstr string) l.LogLevel {
 
 // Fatal ...
 func Fatal(format string, args ...interface{}) {
-	if gLogger == nil {
-		panic("logger not initialized")
-	}
+	checkInitState()
 	gLogger.Fatalf(format, args...)
 }
 
 // Error ...
 func Error(format string, args ...interface{}) {
-	if gLogger == nil {
-		panic("logger not initialized")
-	}
+	checkInitState()
 	gLogger.Errorf(format, args...)
 }
 
 // Warn ...
 func Warn(format string, args ...interface{}) {
-	if gLogger == nil {
-		panic("logger not initialized")
-	}
+	checkInitState()
 	gLogger.Warningf(format, args...)
 }
 
 // Info ...
 func Info(format string, args ...interface{}) {
-	if gLogger == nil {
-		panic("logger not initialized")
-	}
+	checkInitState()
 	gLogger.Infof(format, args...)
 }
 
 // Debug ...
 func Debug(format string, args ...interface{}) {
+	checkInitState()
+	gLogger.Debugf(format, args...)
+}
+
+func checkInitState() {
 	if gLogger == nil {
 		panic("logger not initialized")
 	}
-	gLogger.Debugf(format, args...)
 }

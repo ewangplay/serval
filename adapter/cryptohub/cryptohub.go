@@ -18,12 +18,38 @@ type CryptoHub interface {
 }
 
 // Global crypto hub instance
-var gCryptoHub CryptoHub
+var gCH CryptoHub
 
-// GetCryptoHub returns the crypto hub instance in singleton mode
-func GetCryptoHub() CryptoHub {
-	if gCryptoHub == nil {
-		gCryptoHub = CreateEd25519CryptoHub()
+// InitCryptoHub initializes the cryptohub instance with singleton mode
+// This method MUST be called before any other method can be called.
+func InitCryptoHub() error {
+	if gCH == nil {
+		gCH = CreateEd25519CryptoHub()
 	}
-	return gCryptoHub
+
+	return nil
+}
+
+// GenKey returns a public and private key pair
+func GenKey() (publicKey PublicKey, privateKey PrivateKey, err error) {
+	checkInitState()
+	return gCH.GenKey()
+}
+
+// Sign signs the message with privateKey and returns signature
+func Sign(privateKey PrivateKey, message []byte) (signature []byte, err error) {
+	checkInitState()
+	return gCH.Sign(privateKey, message)
+}
+
+// Verify verifies signature against publicKey and message
+func Verify(publicKey PublicKey, message []byte, signature []byte) (valid bool, err error) {
+	checkInitState()
+	return gCH.Verify(publicKey, message, signature)
+}
+
+func checkInitState() {
+	if gCH == nil {
+		panic("cryptohub not initialized")
+	}
 }

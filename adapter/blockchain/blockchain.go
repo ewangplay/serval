@@ -4,13 +4,13 @@ import (
 	"errors"
 )
 
-// BlockChain represents the block chain interface
+// BlockChain represents the blockchain interface
 type BlockChain interface {
 	Submit(string, ...string) ([]byte, error)
 	Evaluate(string, ...string) ([]byte, error)
 }
 
-// Global block chain instance
+// Global blockchain instance
 var gBC BlockChain
 
 // Config defines BlockChain config
@@ -18,8 +18,8 @@ type Config struct {
 	HLFabric *HLFabricConfig
 }
 
-// InitBlockChain initializes the block chain instance with singleton mode
-// This initialization function MUST be called before any other method can be called
+// InitBlockChain initializes the blockchain instance with singleton mode
+// This method MUST be called before any other method can be called.
 func InitBlockChain(cfg *Config) error {
 
 	if gBC == nil {
@@ -40,17 +40,23 @@ func InitBlockChain(cfg *Config) error {
 }
 
 // Submit will submit a transaction to the ledger
+// MUST call the InitBlockChain method before you can call this method,
+// otherwise it will cause a panic of "blockchain not initialized".
 func Submit(fn string, args ...string) ([]byte, error) {
-	if gBC == nil {
-		panic("blockchain not initialized")
-	}
+	checkInitState()
 	return gBC.Submit(fn, args...)
 }
 
 // Evaluate will evaluate a transaction function and return its results
+// MUST call the InitBlockChain method before you can call this method,
+// otherwise it will cause a panic of "blockchain not initialized".
 func Evaluate(fn string, args ...string) ([]byte, error) {
+	checkInitState()
+	return gBC.Evaluate(fn, args...)
+}
+
+func checkInitState() {
 	if gBC == nil {
 		panic("blockchain not initialized")
 	}
-	return gBC.Evaluate(fn, args...)
 }

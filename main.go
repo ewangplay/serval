@@ -8,6 +8,7 @@ import (
 
 	"github.com/ewangplay/rwriter"
 	bc "github.com/ewangplay/serval/adapter/blockchain"
+	ch "github.com/ewangplay/serval/adapter/cryptohub"
 	"github.com/ewangplay/serval/config"
 	"github.com/ewangplay/serval/log"
 	"github.com/ewangplay/serval/router"
@@ -69,6 +70,13 @@ func main() {
 	err = bc.InitBlockChain(bcCfg)
 	if err != nil {
 		fmt.Printf("Init blochchain failed: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Init CryptoHub
+	err = ch.InitCryptoHub()
+	if err != nil {
+		fmt.Printf("Init cryptohub failed: %v\n", err)
 		os.Exit(1)
 	}
 

@@ -41,7 +41,7 @@ func CreateDid(c *gin.Context) {
 
 	// Generate master public / private key pair
 	key1 := fmt.Sprintf("%s#keys-1", did)
-	pubKey1, priKey1, err := ch.GetCryptoHub().GenKey()
+	pubKey1, priKey1, err := ch.GenKey()
 	if err != nil {
 		log.Error("Gen master key pair failed: %v", err)
 		c.AbortWithError(http.StatusInternalServerError, err)
@@ -51,7 +51,7 @@ func CreateDid(c *gin.Context) {
 	// Use master private key to sign did
 	// Once an entity's DID is generated,
 	// it does not change, so signing did is appropriate.
-	signature, err := ch.GetCryptoHub().Sign(priKey1, []byte(did))
+	signature, err := ch.Sign(priKey1, []byte(did))
 	if err != nil {
 		log.Error("Self signing failed: %v", err)
 		c.AbortWithError(http.StatusInternalServerError, err)
@@ -60,7 +60,7 @@ func CreateDid(c *gin.Context) {
 
 	// Generate standby public / private key pair
 	key2 := fmt.Sprintf("%s#keys-2", did)
-	pubKey2, priKey2, err := ch.GetCryptoHub().GenKey()
+	pubKey2, priKey2, err := ch.GenKey()
 	if err != nil {
 		log.Error("Gen standby key pair failed: %v", err)
 		c.AbortWithError(http.StatusInternalServerError, err)
@@ -109,7 +109,7 @@ func CreateDid(c *gin.Context) {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
-	signature, err = ch.GetCryptoHub().Sign(ch.Ed25519PrivateKey(appPriKey), []byte(hash))
+	signature, err = ch.Sign(ch.Ed25519PrivateKey(appPriKey), []byte(hash))
 	if err != nil {
 		log.Error("Provider signing failed: %v", err)
 		c.AbortWithError(http.StatusInternalServerError, err)
@@ -250,7 +250,7 @@ func verifyDIDPackage(did string, didPkg *DIDPackage) error {
 	if err != nil {
 		return err
 	}
-	valid, err := ch.GetCryptoHub().Verify(ch.Ed25519PublicKey(appPubKey), []byte(hash), signature)
+	valid, err := ch.Verify(ch.Ed25519PublicKey(appPubKey), []byte(hash), signature)
 	if err != nil {
 		return err
 	}

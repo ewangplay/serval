@@ -30,7 +30,7 @@ func CreateEd25519CryptoHub() *Ed25519CryptoHub {
 	return &Ed25519CryptoHub{}
 }
 
-// GenKey generates one ed25519 public key and private key pair
+// GenKey returns a public and private key pair of ed25519 algorithm
 func (ed *Ed25519CryptoHub) GenKey() (PublicKey, PrivateKey, error) {
 	pubKey, priKey, err := ed25519.GenerateKey(nil)
 	if err != nil {
