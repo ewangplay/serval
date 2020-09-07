@@ -65,6 +65,7 @@ func main() {
 				Name:    viper.GetString("blockchain.hlfabric.appUser.Name"),
 				MspPath: viper.GetString("blockchain.hlfabric.appUser.mspPath"),
 			},
+			EndorsingPeers: viper.GetStringSlice("blockchain.hlfabric.endorsingPeers"),
 		},
 	}
 	err = bc.InitBlockChain(bcCfg)

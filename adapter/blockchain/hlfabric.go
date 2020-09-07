@@ -18,16 +18,18 @@ type AppUser struct {
 
 // HLFabricConfig defines hlfabric config
 type HLFabricConfig struct {
-	ChannelName string
-	ContractID  string
-	MspID       string
-	WalletPath  string
-	CcpPath     string
-	AppUser     AppUser
+	ChannelName    string
+	ContractID     string
+	MspID          string
+	WalletPath     string
+	CcpPath        string
+	AppUser        AppUser
+	EndorsingPeers []string
 }
 
 // HLFabric represents hyperledger fabric blockchain
 type HLFabric struct {
+	config   *HLFabricConfig
 	wallet   *gateway.Wallet
 	gateway  *gateway.Gateway
 	network  *gateway.Network
@@ -69,6 +71,7 @@ func CreateHLFabric(cfg *HLFabricConfig) (*HLFabric, error) {
 	contract := network.GetContract(cfg.ContractID)
 
 	hlf := &HLFabric{
+		config:   cfg,
 		wallet:   wallet,
 		gateway:  gw,
 		network:  network,
@@ -112,7 +115,12 @@ func populateWallet(wallet *gateway.Wallet, mspID string, appUser *AppUser) erro
 
 // Submit will submit a transaction to the ledger
 func (hlf *HLFabric) Submit(fn string, args ...string) ([]byte, error) {
-	return hlf.contract.SubmitTransaction(fn, args...)
+	txn, err := hlf.contract.CreateTransaction(fn,
+		gateway.WithEndorsingPeers(hlf.config.EndorsingPeers...))
+	if err != nil {
+		return nil, err
+	}
+	return txn.Submit(args...)
 }
 
 // Evaluate will evaluate a transaction function and return its results

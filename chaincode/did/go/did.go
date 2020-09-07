@@ -16,14 +16,14 @@ func (s *SmartContract) InitLedger(ctx contractapi.TransactionContextInterface) 
 }
 
 // CreateDID adds a new did / ddo record to the world state
-func (s *SmartContract) CreateDID(ctx contractapi.TransactionContextInterface, did string, ddo []byte) error {
+func (s *SmartContract) CreateDID(ctx contractapi.TransactionContextInterface, did string, ddo string) error {
 	if did == "" {
 		return fmt.Errorf("input param did is missing")
 	}
 	if len(ddo) == 0 {
 		return fmt.Errorf("input param ddo is missing")
 	}
-	return ctx.GetStub().PutState(did, ddo)
+	return ctx.GetStub().PutState(did, []byte(ddo))
 }
 
 // QueryDID returns the ddo stored in the world state with given did
