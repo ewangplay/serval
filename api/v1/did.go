@@ -17,19 +17,13 @@ import (
 	"github.com/spf13/viper"
 )
 
-var appKey *Key
-
-func init() {
-	appKey = &Key{
-		ID:            viper.GetString("appKey.id"),
-		Type:          KeyType(viper.GetString("appKey.type")),
-		PrivateKeyHex: viper.GetString("appKey.privateKeyHex"),
-		PublicKeyHex:  viper.GetString("appKey.publicKeyHex"),
-	}
-}
-
 // CreateDid handles the /api/v1/did/create request to create a DID
 func CreateDid(c *gin.Context) {
+
+	log.Debug("app key id: %v", viper.GetString("appKey.id"))
+	log.Debug("app key type: %v", viper.GetString("appKey.type"))
+	log.Debug("app private key: %v", viper.GetString("appKey.privateKeyHex"))
+	log.Debug("app public key: %v", viper.GetString("appKey.publicKeyHex"))
 
 	// Generate DID
 	methodName := "example"
@@ -103,7 +97,7 @@ func CreateDid(c *gin.Context) {
 	hash := utils.SHA256(ddoBytes)
 
 	// Use application private key to sign DID Document content
-	appPriKey, err := hex.DecodeString(appKey.PrivateKeyHex)
+	appPriKey, err := hex.DecodeString(viper.GetString("appKey.privateKeyHex"))
 	if err != nil {
 		log.Error("Load app private key failed: %v", err)
 		c.AbortWithError(http.StatusInternalServerError, err)
@@ -122,8 +116,8 @@ func CreateDid(c *gin.Context) {
 		Document: ddoBytes,
 		Hash:     hash,
 		ProviderProof: &Proof{
-			Type:           appKey.Type,
-			Creator:        appKey.ID,
+			Type:           KeyType(viper.GetString("appKey.type")),
+			Creator:        viper.GetString("appKey.id"),
 			SignatureValue: base64.StdEncoding.EncodeToString(signature),
 		},
 	}
@@ -234,15 +228,15 @@ func verifyDIDPackage(did string, didPkg *DIDPackage) error {
 		err = fmt.Errorf("no provider proof")
 		return err
 	}
-	if didPkg.ProviderProof.Creator != appKey.ID {
+	if didPkg.ProviderProof.Creator != viper.GetString("appKey.id") {
 		err = fmt.Errorf("provider did does not match")
 		return err
 	}
-	if didPkg.ProviderProof.Type != appKey.Type {
+	if didPkg.ProviderProof.Type != KeyType(viper.GetString("appKey.type")) {
 		err = fmt.Errorf("signature algorithm not match")
 		return err
 	}
-	appPubKey, err := hex.DecodeString(appKey.PublicKeyHex)
+	appPubKey, err := hex.DecodeString(viper.GetString("appKey.publicKeyHex"))
 	if err != nil {
 		return err
 	}
