@@ -12,7 +12,7 @@ blockchain:
             Name: appUser
             mspPath: /path/to/appUser/msp
         endorsingPeers:
-            - localhost:7051
+            - peer0.org1.example.com:7051
 
 appKey:
     id: "did:example:6d3e94db056a494f9843ca377b3dfca9#keys-1"

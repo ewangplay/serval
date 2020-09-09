@@ -115,11 +115,20 @@ func populateWallet(wallet *gateway.Wallet, mspID string, appUser *AppUser) erro
 
 // Submit will submit a transaction to the ledger
 func (hlf *HLFabric) Submit(fn string, args ...string) ([]byte, error) {
-	txn, err := hlf.contract.CreateTransaction(fn,
-		gateway.WithEndorsingPeers(hlf.config.EndorsingPeers...))
+	var err error
+	var txn *gateway.Transaction
+
+	if len(hlf.config.EndorsingPeers) > 0 {
+		txn, err = hlf.contract.CreateTransaction(fn,
+			gateway.WithEndorsingPeers(hlf.config.EndorsingPeers...))
+	} else {
+		txn, err = hlf.contract.CreateTransaction(fn)
+	}
+
 	if err != nil {
 		return nil, err
 	}
+
 	return txn.Submit(args...)
 }
 

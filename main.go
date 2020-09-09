@@ -26,6 +26,9 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Debug prints all configuration registries for debugging
+	viper.Debug()
+
 	// New Rotate Writer
 	var w io.Writer
 	rwCfg := &rwriter.Config{
