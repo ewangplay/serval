@@ -26,7 +26,7 @@ peers:
   peer0.org1.example.com:
     url: grpcs://peer0.org1.example.com:7051
     tlsCACerts:
-      path: /path/to/tls-ca-org1.pem 
+      path: /opt/serval/etc/blockchain/tlsCACerts/tls-ca-org1.pem 
     grpcOptions:
       ssl-target-name-override: peer0.org1.example.com
       hostnameOverride: peer0.org1.example.com
@@ -34,7 +34,7 @@ orderers:
   orderer.example.com:
     url: grpcs://orderer.example.com:7050
     tlsCACerts:
-      path: /path/to/tls-ca-orderer.pem
+      path: /opt/serval/etc/blockchain/tlsCACerts/tls-ca-orderer.pem
     grpcOptions:
       ssl-target-name-override: orderer.example.com
       hostnameOverride: orderer.example.com

@@ -6,11 +6,11 @@ blockchain:
         channelName: mychannel
         contractID: did
         mspID: Org1MSP
-        walletPath: /path/to/wallet
-        ccpPath: /path/to/connection-org1.yaml
+        walletPath: /opt/serval/etc/blockchain/wallet
+        ccpPath: /opt/serval/etc/blockchain/connection-org1.yaml
         appUser:
             Name: appUser
-            mspPath: /path/to/appUser/msp
+            mspPath: /opt/serval/etc/blockchain/appUser/msp
         endorsingPeers:
             - peer0.org1.example.com:7051
 

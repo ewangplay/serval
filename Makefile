@@ -55,5 +55,7 @@ install: serval
 	@cp build/bin/serval /opt/serval/bin/
 	@mkdir -p /opt/serval/etc 
 	@cp sampleconfig/serval.yaml /opt/serval/etc/
+	@cp -r sampleconfig/blockchain /opt/serval/etc/
+	@mkdir -p /opt/serval/etc/blockchain/wallet
 	@mkdir -p /opt/serval/log
 	@echo "Serval installed successfully"
