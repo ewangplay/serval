@@ -78,7 +78,12 @@ func main() {
 	}
 
 	// Init CryptoHub
-	err = ch.InitCryptoHub()
+	chCfg := &ch.Config{
+		Signer: &ch.SignerConfig{
+			Algorithm: viper.GetString("cryptohub.signer.algorithm"),
+		},
+	}
+	err = ch.InitCryptoHub(chCfg)
 	if err != nil {
 		fmt.Printf("Init cryptohub failed: %v\n", err)
 		os.Exit(1)

@@ -1,55 +1,36 @@
 package cryptohub
 
-// PublicKey represents the public key interface
-type PublicKey interface {
-	GetPublicKey() []byte
+// Key represents a cryptographic key
+type Key interface {
+	// Bytes converts this key to its byte representation,
+	// if this operation is allowed.
+	Bytes() ([]byte, error)
+
+	// Symmetric returns true if this key is a symmetric key,
+	// false is this key is asymmetric
+	Symmetric() bool
+
+	// Private returns true if this key is a private key,
+	// false otherwise.
+	Private() bool
+
+	// PublicKey returns the corresponding public key part of an asymmetric public/private key pair.
+	// This method returns an error in symmetric key schemes.
+	PublicKey() (Key, error)
 }
 
-// PrivateKey represent the private key interface
-type PrivateKey interface {
-	GetPrivateKey() []byte
-}
+// Signer represents the interface for signing operations.
+type Signer interface {
+	// GenKey generates a signature key.
+	GenKey() (k Key, err error)
 
-// CryptoHub represents the crypto hub interface
-type CryptoHub interface {
-	GenKey() (publicKey PublicKey, privateKey PrivateKey, err error)
-	Sign(privateKey PrivateKey, message []byte) (signature []byte, err error)
-	Verify(publicKey PublicKey, message []byte, signature []byte) (valid bool, err error)
-}
+	// Sign signs digest using key k.
+	//
+	// Note that when a signature of a hash of a larger message is needed,
+	// the caller is responsible for hashing the larger message and passing
+	// the hash (as digest).
+	Sign(k Key, digest []byte) (signature []byte, err error)
 
-// Global crypto hub instance
-var gCH CryptoHub
-
-// InitCryptoHub initializes the cryptohub instance with singleton mode
-// This method MUST be called before any other method can be called.
-func InitCryptoHub() error {
-	if gCH == nil {
-		gCH = CreateEd25519CryptoHub()
-	}
-
-	return nil
-}
-
-// GenKey returns a public and private key pair
-func GenKey() (publicKey PublicKey, privateKey PrivateKey, err error) {
-	checkInitState()
-	return gCH.GenKey()
-}
-
-// Sign signs the message with privateKey and returns signature
-func Sign(privateKey PrivateKey, message []byte) (signature []byte, err error) {
-	checkInitState()
-	return gCH.Sign(privateKey, message)
-}
-
-// Verify verifies signature against publicKey and message
-func Verify(publicKey PublicKey, message []byte, signature []byte) (valid bool, err error) {
-	checkInitState()
-	return gCH.Verify(publicKey, message, signature)
-}
-
-func checkInitState() {
-	if gCH == nil {
-		panic("cryptohub not initialized")
-	}
+	// Verify verifies signature against key k and digest
+	Verify(k Key, digest, signature []byte) (valid bool, err error)
 }

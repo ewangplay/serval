@@ -35,9 +35,33 @@ func CreateDid(c *gin.Context) {
 
 	// Generate master public / private key pair
 	key1 := fmt.Sprintf("%s#keys-1", did)
-	pubKey1, priKey1, err := ch.GenKey()
+	priKey1, err := ch.GenKey()
 	if err != nil {
-		log.Error("Gen master key pair failed: %v", err)
+		log.Error("Gen master key failed: %v", err)
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	if priKey1.Symmetric() || !priKey1.Private() {
+		err = fmt.Errorf("the generated key's type incorrect")
+		log.Error("Gen master key failed: %v", err)
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	priKey1Bytes, err := priKey1.Bytes()
+	if err != nil {
+		log.Error("Gen master key failed: %v", err)
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	pubKey1, err := priKey1.PublicKey()
+	if err != nil {
+		log.Error("Gen master key failed: %v", err)
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	pubKey1Bytes, err := pubKey1.Bytes()
+	if err != nil {
+		log.Error("Gen master key failed: %v", err)
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
@@ -54,9 +78,33 @@ func CreateDid(c *gin.Context) {
 
 	// Generate standby public / private key pair
 	key2 := fmt.Sprintf("%s#keys-2", did)
-	pubKey2, priKey2, err := ch.GenKey()
+	priKey2, err := ch.GenKey()
 	if err != nil {
-		log.Error("Gen standby key pair failed: %v", err)
+		log.Error("Gen standby key failed: %v", err)
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	if priKey2.Symmetric() || !priKey2.Private() {
+		err = fmt.Errorf("the generated key's type incorrect")
+		log.Error("Gen standby key failed: %v", err)
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	priKey2Bytes, err := priKey2.Bytes()
+	if err != nil {
+		log.Error("Gen standby key failed: %v", err)
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	pubKey2, err := priKey2.PublicKey()
+	if err != nil {
+		log.Error("Gen standby key failed: %v", err)
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	pubKey2Bytes, err := pubKey2.Bytes()
+	if err != nil {
+		log.Error("Gen standby key failed: %v", err)
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
@@ -70,12 +118,12 @@ func CreateDid(c *gin.Context) {
 			PublicKey{
 				ID:           key1,
 				Type:         Ed25519Key,
-				PublicKeyHex: hex.EncodeToString(pubKey1.GetPublicKey()),
+				PublicKeyHex: hex.EncodeToString(pubKey1Bytes),
 			},
 			PublicKey{
 				ID:           key2,
 				Type:         Ed25519Key,
-				PublicKeyHex: hex.EncodeToString(pubKey2.GetPublicKey()),
+				PublicKeyHex: hex.EncodeToString(pubKey2Bytes),
 			},
 		},
 		Controller:     did,
@@ -97,13 +145,23 @@ func CreateDid(c *gin.Context) {
 	hash := utils.SHA256(ddoBytes)
 
 	// Use application private key to sign DID Document content
-	appPriKey, err := hex.DecodeString(viper.GetString("appKey.privateKeyHex"))
+	appPriKeyBytes, err := hex.DecodeString(viper.GetString("appKey.privateKeyHex"))
 	if err != nil {
 		log.Error("Load app private key failed: %v", err)
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
-	signature, err = ch.Sign(ch.Ed25519PrivateKey(appPriKey), []byte(hash))
+	appPubKeyBytes, err := hex.DecodeString(viper.GetString("appKey.publicKeyHex"))
+	if err != nil {
+		log.Error("Load app public key failed: %v", err)
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	appPriKey := &ch.Ed25519PrivateKey{
+		PrivateKeyBytes: appPriKeyBytes,
+		PublicKeyBytes:  appPubKeyBytes,
+	}
+	signature, err = ch.Sign(appPriKey, []byte(hash))
 	if err != nil {
 		log.Error("Provider signing failed: %v", err)
 		c.AbortWithError(http.StatusInternalServerError, err)
@@ -140,14 +198,14 @@ func CreateDid(c *gin.Context) {
 			&Key{
 				ID:            key1,
 				Type:          Ed25519Key,
-				PrivateKeyHex: hex.EncodeToString(priKey1.GetPrivateKey()),
-				PublicKeyHex:  hex.EncodeToString(pubKey1.GetPublicKey()),
+				PrivateKeyHex: hex.EncodeToString(priKey1Bytes),
+				PublicKeyHex:  hex.EncodeToString(pubKey1Bytes),
 			},
 			&Key{
 				ID:            key2,
 				Type:          Ed25519Key,
-				PrivateKeyHex: hex.EncodeToString(priKey2.GetPrivateKey()),
-				PublicKeyHex:  hex.EncodeToString(pubKey2.GetPublicKey()),
+				PrivateKeyHex: hex.EncodeToString(priKey2Bytes),
+				PublicKeyHex:  hex.EncodeToString(pubKey2Bytes),
 			},
 		},
 	}
@@ -236,7 +294,7 @@ func verifyDIDPackage(did string, didPkg *DIDPackage) error {
 		err = fmt.Errorf("signature algorithm not match")
 		return err
 	}
-	appPubKey, err := hex.DecodeString(viper.GetString("appKey.publicKeyHex"))
+	appPubKeyBytes, err := hex.DecodeString(viper.GetString("appKey.publicKeyHex"))
 	if err != nil {
 		return err
 	}
@@ -244,7 +302,7 @@ func verifyDIDPackage(did string, didPkg *DIDPackage) error {
 	if err != nil {
 		return err
 	}
-	valid, err := ch.Verify(ch.Ed25519PublicKey(appPubKey), []byte(hash), signature)
+	valid, err := ch.Verify(ch.Ed25519PublicKey(appPubKeyBytes), []byte(hash), signature)
 	if err != nil {
 		return err
 	}
