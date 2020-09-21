@@ -4,6 +4,7 @@ go 1.14
 
 require (
 	github.com/apsdehal/go-logger v0.0.0-20190515212710-b0d6ccfee0e6
+	github.com/ewangplay/cryptohub v0.1.0
 	github.com/ewangplay/rwriter v0.2.0
 	github.com/gin-gonic/gin v1.6.3
 	github.com/hyperledger/fabric-protos-go v0.0.0-20200424173316-dd554ba3746e // indirect

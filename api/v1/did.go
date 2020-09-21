@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	orich "github.com/ewangplay/cryptohub"
 	bc "github.com/ewangplay/serval/adapter/blockchain"
 	ch "github.com/ewangplay/serval/adapter/cryptohub"
 	"github.com/ewangplay/serval/log"
@@ -35,7 +36,7 @@ func CreateDid(c *gin.Context) {
 
 	// Generate master public / private key pair
 	key1 := fmt.Sprintf("%s#keys-1", did)
-	priKey1, err := ch.GenKey()
+	priKey1, err := ch.GenEd25519Key()
 	if err != nil {
 		log.Error("Gen master key failed: %v", err)
 		c.AbortWithError(http.StatusInternalServerError, err)
@@ -78,7 +79,7 @@ func CreateDid(c *gin.Context) {
 
 	// Generate standby public / private key pair
 	key2 := fmt.Sprintf("%s#keys-2", did)
-	priKey2, err := ch.GenKey()
+	priKey2, err := ch.GenEd25519Key()
 	if err != nil {
 		log.Error("Gen standby key failed: %v", err)
 		c.AbortWithError(http.StatusInternalServerError, err)
@@ -151,15 +152,8 @@ func CreateDid(c *gin.Context) {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
-	appPubKeyBytes, err := hex.DecodeString(viper.GetString("appKey.publicKeyHex"))
-	if err != nil {
-		log.Error("Load app public key failed: %v", err)
-		c.AbortWithError(http.StatusInternalServerError, err)
-		return
-	}
-	appPriKey := &ch.Ed25519PrivateKey{
-		PrivateKeyBytes: appPriKeyBytes,
-		PublicKeyBytes:  appPubKeyBytes,
+	appPriKey := &orich.Ed25519PrivateKey{
+		PrivKey: appPriKeyBytes,
 	}
 	signature, err = ch.Sign(appPriKey, []byte(hash))
 	if err != nil {
@@ -302,7 +296,10 @@ func verifyDIDPackage(did string, didPkg *DIDPackage) error {
 	if err != nil {
 		return err
 	}
-	valid, err := ch.Verify(ch.Ed25519PublicKey(appPubKeyBytes), []byte(hash), signature)
+	appPubKey := &orich.Ed25519PublicKey{
+		PubKey: appPubKeyBytes,
+	}
+	valid, err := ch.Verify(appPubKey, []byte(hash), signature)
 	if err != nil {
 		return err
 	}

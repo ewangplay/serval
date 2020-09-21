@@ -1,36 +1,59 @@
 package cryptohub
 
-// Key represents a cryptographic key
-type Key interface {
-	// Bytes converts this key to its byte representation,
-	// if this operation is allowed.
-	Bytes() ([]byte, error)
+import (
+	"sync"
 
-	// Symmetric returns true if this key is a symmetric key,
-	// false is this key is asymmetric
-	Symmetric() bool
+	ch "github.com/ewangplay/cryptohub"
+)
 
-	// Private returns true if this key is a private key,
-	// false otherwise.
-	Private() bool
+// Global instance definition
+var (
+	initOnce sync.Once
+	gCSP     ch.CSP
+)
 
-	// PublicKey returns the corresponding public key part of an asymmetric public/private key pair.
-	// This method returns an error in symmetric key schemes.
-	PublicKey() (Key, error)
+// InitCryptoHub initializes the cryptohub instance with singleton mode
+func InitCryptoHub() error {
+	var err error
+
+	initOnce.Do(func() {
+		err = initCryptHub()
+	})
+
+	return err
 }
 
-// Signer represents the interface for signing operations.
-type Signer interface {
-	// GenKey generates a signature key.
-	GenKey() (k Key, err error)
+func initCryptHub() (err error) {
+	cfg := &ch.Config{
+		ProviderName: "SW",
+	}
+	gCSP, err = ch.GetCSP(cfg)
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
-	// Sign signs digest using key k.
-	//
-	// Note that when a signature of a hash of a larger message is needed,
-	// the caller is responsible for hashing the larger message and passing
-	// the hash (as digest).
-	Sign(k Key, digest []byte) (signature []byte, err error)
+// GenEd25519Key generates an Ed25519 key.
+func GenEd25519Key() (k ch.Key, err error) {
+	assertCSPValid()
+	return gCSP.KeyGen(&ch.ED25519KeyGenOpts{})
+}
 
-	// Verify verifies signature against key k and digest
-	Verify(k Key, digest, signature []byte) (valid bool, err error)
+// Sign signs digest using key k.
+func Sign(k ch.Key, digest []byte) (signature []byte, err error) {
+	assertCSPValid()
+	return gCSP.Sign(k, digest)
+}
+
+// Verify verifies signature against key k and digest
+func Verify(k ch.Key, digest, signature []byte) (valid bool, err error) {
+	assertCSPValid()
+	return gCSP.Verify(k, digest, signature)
+}
+
+func assertCSPValid() {
+	if gCSP == nil {
+		panic("CSP not be initialized")
+	}
 }
