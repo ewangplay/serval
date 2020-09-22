@@ -27,18 +27,18 @@ func (s *SmartContract) CreateDID(ctx contractapi.TransactionContextInterface, d
 }
 
 // QueryDID returns the ddo stored in the world state with given did
-func (s *SmartContract) QueryDID(ctx contractapi.TransactionContextInterface, did string) ([]byte, error) {
+func (s *SmartContract) QueryDID(ctx contractapi.TransactionContextInterface, did string) (string, error) {
 	if did == "" {
-		return nil, fmt.Errorf("input param did is missing")
+		return "", fmt.Errorf("input param did is missing")
 	}
 	ddo, err := ctx.GetStub().GetState(did)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	if ddo == nil {
-		return nil, fmt.Errorf("%s does not exist", did)
+		return "", fmt.Errorf("%s does not exist", did)
 	}
-	return ddo, nil
+	return string(ddo), nil
 }
 
 func main() {
