@@ -1,19 +1,19 @@
-package cryptohub
+package cryptolib
 
 import (
 	"sync"
 
-	ch "github.com/ewangplay/cryptohub"
+	cl "github.com/ewangplay/cryptolib"
 )
 
 // Global instance definition
 var (
 	initOnce sync.Once
-	gCSP     ch.CSP
+	gCSP     cl.CSP
 )
 
-// InitCryptoHub initializes the cryptohub instance with singleton mode
-func InitCryptoHub() error {
+// Initcryptolib initializes the cryptolib instance with singleton mode
+func Initcryptolib() error {
 	var err error
 
 	initOnce.Do(func() {
@@ -24,10 +24,10 @@ func InitCryptoHub() error {
 }
 
 func initCryptHub() (err error) {
-	cfg := &ch.Config{
+	cfg := &cl.Config{
 		ProviderName: "SW",
 	}
-	gCSP, err = ch.GetCSP(cfg)
+	gCSP, err = cl.GetCSP(cfg)
 	if err != nil {
 		return err
 	}
@@ -35,21 +35,21 @@ func initCryptHub() (err error) {
 }
 
 // GenEd25519Key generates an Ed25519 key.
-func GenEd25519Key() (k ch.Key, err error) {
+func GenEd25519Key() (k cl.Key, err error) {
 	assertCSPValid()
-	return gCSP.KeyGen(&ch.ED25519KeyGenOpts{})
+	return gCSP.KeyGen(&cl.ED25519KeyGenOpts{})
 }
 
 // Sign signs digest using key k.
-func Sign(k ch.Key, digest []byte) (signature []byte, err error) {
+func Sign(k cl.Key, digest []byte) (signature []byte, err error) {
 	assertCSPValid()
-	return gCSP.Sign(k, digest)
+	return gCSP.Sign(k, digest, nil)
 }
 
 // Verify verifies signature against key k and digest
-func Verify(k ch.Key, digest, signature []byte) (valid bool, err error) {
+func Verify(k cl.Key, digest, signature []byte) (valid bool, err error) {
 	assertCSPValid()
-	return gCSP.Verify(k, digest, signature)
+	return gCSP.Verify(k, digest, signature, nil)
 }
 
 func assertCSPValid() {

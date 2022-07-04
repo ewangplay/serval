@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	orich "github.com/ewangplay/cryptohub"
+	orich "github.com/ewangplay/cryptolib"
 	bc "github.com/ewangplay/serval/adapter/blockchain"
-	ch "github.com/ewangplay/serval/adapter/cryptohub"
+	cl "github.com/ewangplay/serval/adapter/cryptolib"
 	"github.com/ewangplay/serval/log"
 	"github.com/ewangplay/serval/utils"
 	"github.com/gin-gonic/gin"
@@ -36,7 +36,7 @@ func CreateDid(c *gin.Context) {
 
 	// Generate master public / private key pair
 	key1 := fmt.Sprintf("%s#keys-1", did)
-	priKey1, err := ch.GenEd25519Key()
+	priKey1, err := cl.GenEd25519Key()
 	if err != nil {
 		log.Error("Gen master key failed: %v", err)
 		c.AbortWithError(http.StatusInternalServerError, err)
@@ -70,7 +70,7 @@ func CreateDid(c *gin.Context) {
 	// Use master private key to sign did
 	// Once an entity's DID is generated,
 	// it does not change, so signing did is appropriate.
-	signature, err := ch.Sign(priKey1, []byte(did))
+	signature, err := cl.Sign(priKey1, []byte(did))
 	if err != nil {
 		log.Error("Self signing failed: %v", err)
 		c.AbortWithError(http.StatusInternalServerError, err)
@@ -79,7 +79,7 @@ func CreateDid(c *gin.Context) {
 
 	// Generate standby public / private key pair
 	key2 := fmt.Sprintf("%s#keys-2", did)
-	priKey2, err := ch.GenEd25519Key()
+	priKey2, err := cl.GenEd25519Key()
 	if err != nil {
 		log.Error("Gen standby key failed: %v", err)
 		c.AbortWithError(http.StatusInternalServerError, err)
@@ -155,7 +155,7 @@ func CreateDid(c *gin.Context) {
 	appPriKey := &orich.Ed25519PrivateKey{
 		PrivKey: appPriKeyBytes,
 	}
-	signature, err = ch.Sign(appPriKey, []byte(hash))
+	signature, err = cl.Sign(appPriKey, []byte(hash))
 	if err != nil {
 		log.Error("Provider signing failed: %v", err)
 		c.AbortWithError(http.StatusInternalServerError, err)
@@ -299,7 +299,7 @@ func verifyDIDPackage(did string, didPkg *DIDPackage) error {
 	appPubKey := &orich.Ed25519PublicKey{
 		PubKey: appPubKeyBytes,
 	}
-	valid, err := ch.Verify(appPubKey, []byte(hash), signature)
+	valid, err := cl.Verify(appPubKey, []byte(hash), signature)
 	if err != nil {
 		return err
 	}
