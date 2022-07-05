@@ -12,8 +12,8 @@ var (
 	gCSP     cl.CSP
 )
 
-// Initcryptolib initializes the cryptolib instance with singleton mode
-func Initcryptolib() error {
+// InitCryptolib initializes the cryptolib instance with singleton mode
+func InitCryptolib() error {
 	var err error
 
 	initOnce.Do(func() {

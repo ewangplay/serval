@@ -7,8 +7,9 @@ import (
 	"os"
 
 	"github.com/ewangplay/rwriter"
-	bc "github.com/ewangplay/serval/adapter/blockchain"
 	cl "github.com/ewangplay/serval/adapter/cryptolib"
+	"github.com/ewangplay/serval/adapter/store"
+	st "github.com/ewangplay/serval/adapter/store"
 	"github.com/ewangplay/serval/config"
 	"github.com/ewangplay/serval/log"
 	"github.com/ewangplay/serval/router"
@@ -56,29 +57,22 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Init Blockchain
-	bcCfg := &bc.Config{
-		HLFabric: &bc.HLFabricConfig{
-			ChannelName: viper.GetString("blockchain.hlfabric.channelName"),
-			ContractID:  viper.GetString("blockchain.hlfabric.contractID"),
-			MspID:       viper.GetString("blockchain.hlfabric.mspID"),
-			WalletPath:  viper.GetString("blockchain.hlfabric.walletPath"),
-			CcpPath:     viper.GetString("blockchain.hlfabric.ccpPath"),
-			AppUser: bc.AppUser{
-				Name:    viper.GetString("blockchain.hlfabric.appUser.Name"),
-				MspPath: viper.GetString("blockchain.hlfabric.appUser.mspPath"),
-			},
-			EndorsingPeers: viper.GetStringSlice("blockchain.hlfabric.endorsingPeers"),
-		},
-	}
-	err = bc.InitBlockChain(bcCfg)
+	// Init Store
+	var opts store.Options
+	err = viper.UnmarshalKey("store", &opts)
 	if err != nil {
-		fmt.Printf("Init blochchain failed: %v\n", err)
+		fmt.Printf("Read store options failed: %v\n", err)
 		os.Exit(1)
 	}
+	err = st.InitStore(&opts)
+	if err != nil {
+		fmt.Printf("Init store failed: %v\n", err)
+		os.Exit(1)
+	}
+	defer st.ReleaseStore()
 
 	// Init cryptolib
-	err = cl.Initcryptolib()
+	err = cl.InitCryptolib()
 	if err != nil {
 		fmt.Printf("Init cryptolib failed: %v\n", err)
 		os.Exit(1)

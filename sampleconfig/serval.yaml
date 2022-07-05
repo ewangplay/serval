@@ -1,19 +1,6 @@
 server:
     port: 8099
 
-blockchain:
-    hlfabric:
-        channelName: mychannel
-        contractID: did
-        mspID: Org1MSP
-        walletPath: /opt/serval/etc/blockchain/wallet
-        ccpPath: /opt/serval/etc/blockchain/connection-org1.yaml
-        appUser:
-            Name: appUser
-            mspPath: /opt/serval/etc/blockchain/appUser/msp
-        endorsingPeers:
-            - peer0.org1.example.com:7051
-
 appKey:
     id: "did:example:6d3e94db056a494f9843ca377b3dfca9#keys-1"
     type: Ed25519
@@ -24,8 +11,27 @@ log:
     ## log verbosity level: debug, info, warn, error, fatal
     level: info
     ## path to log file
-    path: "/opt/serval/log"
+    path: "/Users/wangxiaohui/tmp/serval/log"
     ## max size per log file before rolling (megabytes)
     maxSize: 100
     ## rotate log file daily
     rotateDaily: false
+
+store:
+    ## Select the backend to use: badgerdb, hlfabric
+    backend: badgerdb
+    ## Backend for testing
+    badgerdb:
+        dir: "/Users/wangxiaohui/tmp/serval/BadgerDB"
+    ## Backend for production
+    hlfabric:
+        channelName: mychannel
+        contractID: kvstore
+        mspID: Org1MSP
+        walletPath: /opt/serval/etc/blockchain/wallet
+        ccpPath: /opt/serval/etc/blockchain/connection-org1.yaml
+        appUser:
+            Name: appUser
+            mspPath: /opt/serval/etc/blockchain/appUser/msp
+        endorsingPeers:
+            - peer0.org1.example.com:7051

@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	orich "github.com/ewangplay/cryptolib"
-	bc "github.com/ewangplay/serval/adapter/blockchain"
+	oricl "github.com/ewangplay/cryptolib"
 	cl "github.com/ewangplay/serval/adapter/cryptolib"
+	"github.com/ewangplay/serval/adapter/store"
 	"github.com/ewangplay/serval/log"
 	"github.com/ewangplay/serval/utils"
 	"github.com/gin-gonic/gin"
@@ -116,12 +116,12 @@ func CreateDid(c *gin.Context) {
 		ID:      did,
 		Version: 1,
 		PublicKey: []PublicKey{
-			PublicKey{
+			{
 				ID:           key1,
 				Type:         Ed25519Key,
 				PublicKeyHex: hex.EncodeToString(pubKey1Bytes),
 			},
-			PublicKey{
+			{
 				ID:           key2,
 				Type:         Ed25519Key,
 				PublicKeyHex: hex.EncodeToString(pubKey2Bytes),
@@ -152,7 +152,7 @@ func CreateDid(c *gin.Context) {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
-	appPriKey := &orich.Ed25519PrivateKey{
+	appPriKey := &oricl.Ed25519PrivateKey{
 		PrivKey: appPriKeyBytes,
 	}
 	signature, err = cl.Sign(appPriKey, []byte(hash))
@@ -174,28 +174,26 @@ func CreateDid(c *gin.Context) {
 		},
 	}
 
-	// Submit did context to block chain
-	didPkgBytes, _ := json.Marshal(didPkg)
-	result, err := bc.Submit("CreateDID", did, string(didPkgBytes))
+	// Set to store
+	err = store.Set(did, didPkg)
 	if err != nil {
-		log.Error("Submit did document to blockchain failed: %v", err)
+		log.Error("Set did document to Store failed: %v", err)
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
-	log.Info("Blockchain submit result: %s", string(result))
 
 	// Response body
 	respBody := CreateDidResponse{
 		Did:     did,
 		Created: now,
 		Key: []*Key{
-			&Key{
+			{
 				ID:            key1,
 				Type:          Ed25519Key,
 				PrivateKeyHex: hex.EncodeToString(priKey1Bytes),
 				PublicKeyHex:  hex.EncodeToString(pubKey1Bytes),
 			},
-			&Key{
+			{
 				ID:            key2,
 				Type:          Ed25519Key,
 				PrivateKeyHex: hex.EncodeToString(priKey2Bytes),
@@ -215,23 +213,20 @@ func ResolveDid(c *gin.Context) {
 	// Retrieve did from path param
 	did := c.Param("did")
 
-	// Query DDO from blockchain
-	result, err := bc.Evaluate("QueryDID", did)
-	if err != nil {
-		log.Error("Query DID Document from blockchain failed: %v", err)
-		c.AbortWithError(http.StatusInternalServerError, err)
-		return
-	}
-
-	log.Debug("Blockchain query result: %v", string(result))
-
+	// Query DDO from Store
 	var didPkg DIDPackage
-	err = json.Unmarshal(result, &didPkg)
+	found, err := store.Get(did, &didPkg)
 	if err != nil {
-		log.Error("Parse DID Package failed: %v", err)
+		log.Error("Query DID Document from Store failed: %v", err)
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
+	if !found {
+		log.Error("DID Document not found for %v", did)
+		c.AbortWithError(http.StatusInternalServerError, fmt.Errorf("DID Document not found for %v", did))
+		return
+	}
+
 	// Verify DID Document
 	err = verifyDIDPackage(did, &didPkg)
 	if err != nil {
@@ -296,7 +291,7 @@ func verifyDIDPackage(did string, didPkg *DIDPackage) error {
 	if err != nil {
 		return err
 	}
-	appPubKey := &orich.Ed25519PublicKey{
+	appPubKey := &oricl.Ed25519PublicKey{
 		PubKey: appPubKeyBytes,
 	}
 	valid, err := cl.Verify(appPubKey, []byte(hash), signature)
