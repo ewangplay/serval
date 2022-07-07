@@ -1,24 +1,17 @@
 package v1
 
 import (
-	"encoding/base64"
-	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
-	"time"
 
-	oricl "github.com/ewangplay/cryptolib"
-	cl "github.com/ewangplay/serval/adapter/cryptolib"
 	"github.com/ewangplay/serval/adapter/store"
+	"github.com/ewangplay/serval/io"
 	"github.com/ewangplay/serval/log"
-	"github.com/ewangplay/serval/utils"
 	"github.com/gin-gonic/gin"
-	"github.com/spf13/viper"
 )
 
 // CreateDid handles the /api/v1/did/create request to create a DID
+/*
 func CreateDid(c *gin.Context) {
 
 	log.Debug("app key id: %v", viper.GetString("appKey.id"))
@@ -110,28 +103,28 @@ func CreateDid(c *gin.Context) {
 		return
 	}
 
-	// DID Document
-	ddo := &DDO{
+	// Build DID Document
+	ddo := &io.DDO{
 		Context: "https://www.w3.org/ns/did/v1",
 		ID:      did,
 		Version: 1,
-		PublicKey: []PublicKey{
+		PublicKey: []io.PublicKey{
 			{
 				ID:           key1,
-				Type:         Ed25519Key,
+				Type:         ecl.ED25519,
 				PublicKeyHex: hex.EncodeToString(pubKey1Bytes),
 			},
 			{
 				ID:           key2,
-				Type:         Ed25519Key,
+				Type:         ecl.ED25519,
 				PublicKeyHex: hex.EncodeToString(pubKey2Bytes),
 			},
 		},
 		Controller:     did,
 		Authentication: []string{key1},
 		Recovery:       []string{key2},
-		Proof: &Proof{
-			Type:           Ed25519Key,
+		Proof: &io.Proof{
+			Type:           ecl.ED25519,
 			Creator:        key1,
 			SignatureValue: base64.StdEncoding.EncodeToString(signature),
 		},
@@ -152,7 +145,7 @@ func CreateDid(c *gin.Context) {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
-	appPriKey := &oricl.Ed25519PrivateKey{
+	appPriKey := &ecl.Ed25519PrivateKey{
 		PrivKey: appPriKeyBytes,
 	}
 	signature, err = cl.Sign(appPriKey, []byte(hash))
@@ -163,12 +156,12 @@ func CreateDid(c *gin.Context) {
 	}
 
 	// Build DID Context
-	didPkg := &DIDPackage{
+	didPkg := &io.DIDPackage{
 		Did:      did,
 		Document: ddoBytes,
 		Hash:     hash,
-		ProviderProof: &Proof{
-			Type:           KeyType(viper.GetString("appKey.type")),
+		ProviderProof: &io.Proof{
+			Type:           viper.GetString("appKey.type"),
 			Creator:        viper.GetString("appKey.id"),
 			SignatureValue: base64.StdEncoding.EncodeToString(signature),
 		},
@@ -183,19 +176,19 @@ func CreateDid(c *gin.Context) {
 	}
 
 	// Response body
-	respBody := CreateDidResponse{
+	respBody := io.CreateDidResp{
 		Did:     did,
 		Created: now,
-		Key: []*Key{
+		Key: []*io.Key{
 			{
 				ID:            key1,
-				Type:          Ed25519Key,
+				Type:          ecl.ED25519,
 				PrivateKeyHex: hex.EncodeToString(priKey1Bytes),
 				PublicKeyHex:  hex.EncodeToString(pubKey1Bytes),
 			},
 			{
 				ID:            key2,
-				Type:          Ed25519Key,
+				Type:          ecl.ED25519,
 				PrivateKeyHex: hex.EncodeToString(priKey2Bytes),
 				PublicKeyHex:  hex.EncodeToString(pubKey2Bytes),
 			},
@@ -206,6 +199,33 @@ func CreateDid(c *gin.Context) {
 
 	c.JSON(http.StatusOK, respBody)
 }
+*/
+
+func CreateDid(c *gin.Context) {
+	var err error
+
+	var req io.CreateDidReq
+	err = c.BindJSON(&req)
+	if err != nil {
+		log.Error("Parse request body failed: %v", err)
+		c.AbortWithError(http.StatusBadRequest, err)
+		return
+	}
+
+	log.Debug("Did: %v\nDocument: %v", req.Did, req.Document)
+
+	// TODO: Verify the signature in DDO
+
+	// Set to store
+	err = store.Set(req.Did, req.Document)
+	if err != nil {
+		log.Error("Set did document to Store failed: %v", err)
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	c.Status(http.StatusOK)
+}
 
 // ResolveDid handles the /api/v1/did/resolve request to resolve a DID
 // Request URL: http://IP:Port/api/v1/did/resolve/:did
@@ -214,94 +234,54 @@ func ResolveDid(c *gin.Context) {
 	did := c.Param("did")
 
 	// Query DDO from Store
-	var didPkg DIDPackage
-	found, err := store.Get(did, &didPkg)
+	var ddo io.DDO
+	found, err := store.Get(did, &ddo)
 	if err != nil {
-		log.Error("Query DID Document from Store failed: %v", err)
+		log.Error("Get DID(%v) Document from Store failed: %v", did, err)
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 	if !found {
-		log.Error("DID Document not found for %v", did)
-		c.AbortWithError(http.StatusInternalServerError, fmt.Errorf("DID Document not found for %v", did))
-		return
-	}
-
-	// Verify DID Document
-	err = verifyDIDPackage(did, &didPkg)
-	if err != nil {
-		log.Error("Verify DID Package failed: %v", err)
-		c.AbortWithError(http.StatusInternalServerError, err)
-		return
-	}
-
-	var ddo DDO
-	err = json.Unmarshal(didPkg.Document, &ddo)
-	if err != nil {
-		log.Error("Parse DID Document failed: %v", err)
-		c.AbortWithError(http.StatusInternalServerError, err)
+		log.Error("%v not found", did)
+		c.AbortWithError(http.StatusInternalServerError, fmt.Errorf("%v not found", did))
 		return
 	}
 
 	// Response body
-	respBody := ResolveDidResponse{
+	resp := io.ResolveDidResp{
 		Did:      did,
-		Document: &ddo,
+		Document: ddo,
 	}
 
-	log.Debug("ResolveDid response: %v", respBody)
+	log.Debug("ResolveDid response: %v", resp)
 
-	c.JSON(http.StatusOK, respBody)
+	c.JSON(http.StatusOK, resp)
 }
 
-func verifyDIDPackage(did string, didPkg *DIDPackage) error {
+// RevokeDid handles the /api/v1/did/revoke request to revoke a DID
+func RevokeDid(c *gin.Context) {
 	var err error
 
-	// Verify DID Identifier
-	if did != didPkg.Did {
-		err = fmt.Errorf("got did %v, want %v", didPkg.Did, did)
-		return err
+	// Parse the request body
+	var req io.RevokeDidReq
+	err = c.BindJSON(&req)
+	if err != nil {
+		log.Error("Parse request body failed: %v", err)
+		c.AbortWithError(http.StatusBadRequest, err)
+		return
 	}
 
-	// Verify DID Document hash value
-	hash := utils.SHA256(didPkg.Document)
-	if hash != didPkg.Hash {
-		err = fmt.Errorf("DID Document hash does not match to actual")
-		return err
+	// TODO: Verify the signature
+	// Client uses the recovery key to make the signature, so we must use the
+	// corresponding public key to verify the signature.
+
+	// Delete the Did/DDO record from Store
+	err = store.Delete(req.Did)
+	if err != nil {
+		log.Error("Delete %s item from Store failed: %v", req.Did, err)
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
 	}
 
-	// Verify provider signature
-	if didPkg.ProviderProof == nil {
-		err = fmt.Errorf("no provider proof")
-		return err
-	}
-	if didPkg.ProviderProof.Creator != viper.GetString("appKey.id") {
-		err = fmt.Errorf("provider did does not match")
-		return err
-	}
-	if didPkg.ProviderProof.Type != KeyType(viper.GetString("appKey.type")) {
-		err = fmt.Errorf("signature algorithm not match")
-		return err
-	}
-	appPubKeyBytes, err := hex.DecodeString(viper.GetString("appKey.publicKeyHex"))
-	if err != nil {
-		return err
-	}
-	signature, err := base64.StdEncoding.DecodeString(didPkg.ProviderProof.SignatureValue)
-	if err != nil {
-		return err
-	}
-	appPubKey := &oricl.Ed25519PublicKey{
-		PubKey: appPubKeyBytes,
-	}
-	valid, err := cl.Verify(appPubKey, []byte(hash), signature)
-	if err != nil {
-		return err
-	}
-	if !valid {
-		err = fmt.Errorf("verify signature fail")
-		return err
-	}
-
-	return nil
+	c.Status(http.StatusOK)
 }

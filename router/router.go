@@ -20,6 +20,7 @@ func InitRouter(w io.Writer) *gin.Engine {
 
 		v1.POST("/did/create", apiV1.CreateDid)
 		v1.GET("/did/resolve/:did", apiV1.ResolveDid)
+		v1.POST("/did/revoke", apiV1.RevokeDid)
 	}
 
 	return r
