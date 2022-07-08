@@ -207,8 +207,9 @@ func CreateDid(c *gin.Context) {
 	var req io.CreateDidReq
 	err = c.BindJSON(&req)
 	if err != nil {
-		log.Error("Parse request body failed: %v", err)
-		c.AbortWithError(http.StatusBadRequest, err)
+		errMsg := fmt.Sprintf("Parse request body failed: %v", err)
+		log.Error(errMsg)
+		FailWithMessage(http.StatusBadRequest, errMsg, c)
 		return
 	}
 
@@ -219,12 +220,13 @@ func CreateDid(c *gin.Context) {
 	// Set to store
 	err = store.Set(req.Did, req.Document)
 	if err != nil {
-		log.Error("Set did document to Store failed: %v", err)
-		c.AbortWithError(http.StatusInternalServerError, err)
+		errMsg := fmt.Sprintf("Set did document to Store failed: %v", err)
+		log.Error(errMsg)
+		FailWithMessage(http.StatusInternalServerError, errMsg, c)
 		return
 	}
 
-	c.Status(http.StatusOK)
+	Ok(c)
 }
 
 // ResolveDid handles the /api/v1/did/resolve request to resolve a DID
@@ -237,13 +239,15 @@ func ResolveDid(c *gin.Context) {
 	var ddo io.DDO
 	found, err := store.Get(did, &ddo)
 	if err != nil {
-		log.Error("Get DID(%v) Document from Store failed: %v", did, err)
-		c.AbortWithError(http.StatusInternalServerError, err)
+		errMsg := fmt.Sprintf("Get DID(%v) Document from Store failed: %v", did, err)
+		log.Error(errMsg)
+		FailWithMessage(http.StatusInternalServerError, errMsg, c)
 		return
 	}
 	if !found {
-		log.Error("%v not found", did)
-		c.AbortWithError(http.StatusInternalServerError, fmt.Errorf("%v not found", did))
+		errMsg := fmt.Sprintf("Did %v not found", did)
+		log.Error(errMsg)
+		FailWithMessage(http.StatusInternalServerError, errMsg, c)
 		return
 	}
 
@@ -255,7 +259,7 @@ func ResolveDid(c *gin.Context) {
 
 	log.Debug("ResolveDid response: %v", resp)
 
-	c.JSON(http.StatusOK, resp)
+	OkWithData(resp, c)
 }
 
 // RevokeDid handles the /api/v1/did/revoke request to revoke a DID
@@ -266,8 +270,23 @@ func RevokeDid(c *gin.Context) {
 	var req io.RevokeDidReq
 	err = c.BindJSON(&req)
 	if err != nil {
-		log.Error("Parse request body failed: %v", err)
-		c.AbortWithError(http.StatusBadRequest, err)
+		errMsg := fmt.Sprintf("Parse request body failed: %v", err)
+		log.Error(errMsg)
+		FailWithMessage(http.StatusBadRequest, errMsg, c)
+		return
+	}
+
+	// Check the params
+	if req.Did == "" {
+		errMsg := fmt.Sprintf("The request parameter did is empty")
+		log.Error(errMsg)
+		FailWithMessage(http.StatusBadRequest, errMsg, c)
+		return
+	}
+	if req.Signature == "" {
+		errMsg := fmt.Sprintf("The request parameter signature is empty")
+		log.Error(errMsg)
+		FailWithMessage(http.StatusBadRequest, errMsg, c)
 		return
 	}
 
@@ -278,10 +297,11 @@ func RevokeDid(c *gin.Context) {
 	// Delete the Did/DDO record from Store
 	err = store.Delete(req.Did)
 	if err != nil {
-		log.Error("Delete %s item from Store failed: %v", req.Did, err)
-		c.AbortWithError(http.StatusInternalServerError, err)
+		errMsg := fmt.Sprintf("Delete %s item from Store failed: %v", req.Did, err)
+		log.Error(errMsg)
+		FailWithMessage(http.StatusInternalServerError, errMsg, c)
 		return
 	}
 
-	c.Status(http.StatusOK)
+	Ok(c)
 }

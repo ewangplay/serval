@@ -55,31 +55,31 @@ func parseLogLevel(levelstr string) l.LogLevel {
 }
 
 // Fatal ...
-func Fatal(format string, args ...interface{}) {
+func Fatal(format string, args ...any) {
 	checkInitState()
 	gLogger.Fatalf(format, args...)
 }
 
 // Error ...
-func Error(format string, args ...interface{}) {
+func Error(format string, args ...any) {
 	checkInitState()
 	gLogger.Errorf(format, args...)
 }
 
 // Warn ...
-func Warn(format string, args ...interface{}) {
+func Warn(format string, args ...any) {
 	checkInitState()
 	gLogger.Warningf(format, args...)
 }
 
 // Info ...
-func Info(format string, args ...interface{}) {
+func Info(format string, args ...any) {
 	checkInitState()
 	gLogger.Infof(format, args...)
 }
 
 // Debug ...
-func Debug(format string, args ...interface{}) {
+func Debug(format string, args ...any) {
 	checkInitState()
 	gLogger.Debugf(format, args...)
 }

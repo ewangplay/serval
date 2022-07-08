@@ -62,13 +62,13 @@ func ReleaseStore() {
 	}
 }
 
-func Set(k string, v interface{}) error {
+func Set(k string, v any) error {
 	assertStoreValid()
 	return gStore.Set(k, v)
 
 }
 
-func Get(k string, v interface{}) (found bool, err error) {
+func Get(k string, v any) (found bool, err error) {
 	assertStoreValid()
 	return gStore.Get(k, v)
 

@@ -84,9 +84,33 @@ func TestCreateDid(t *testing.T) {
 }
 
 func TestResolveDid(t *testing.T) {
-	t.Skip()
+	var err error
+	c := newClient(t)
+
+	t.Run("Ed25519", func(t *testing.T) {
+		var d *io.DDO
+		d, err = c.ResolveDid(did)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if d == nil {
+			t.Fatal("Revolve did failed:", did)
+		}
+	})
 }
 
 func TestRevokeDid(t *testing.T) {
-	t.Skip()
+	var err error
+	c := newClient(t)
+
+	t.Run("Ed25519", func(t *testing.T) {
+		req := &io.RevokeDidReq{
+			Did:       did,
+			Signature: "signature",
+		}
+		err = c.RevokeDid(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
 }

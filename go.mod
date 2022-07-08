@@ -7,7 +7,7 @@ require (
 	github.com/ewangplay/cryptolib v0.6.0
 	github.com/ewangplay/gokv/hlfabric v0.0.0-20220706033222-bed619bd9a5d
 	github.com/ewangplay/rwriter v0.2.1
-	github.com/ewangplay/serval/io v0.0.0-20220707065529-4259472a1d2b
+	github.com/ewangplay/serval/io v0.0.0-20220708082908-97367d7c4111
 	github.com/gin-gonic/gin v1.8.1
 	github.com/philippgille/gokv v0.6.0
 	github.com/philippgille/gokv/badgerdb v0.6.0

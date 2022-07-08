@@ -70,3 +70,10 @@ type RevokeDidReq struct {
 	// Signature to did using recovery prviate key, Base64 encoded
 	Signature string `json:"signature"`
 }
+
+// Response represents the response body
+type Response struct {
+	Code int    `json:"code"`
+	Data any    `json:"data"`
+	Msg  string `json:"msg"`
+}
