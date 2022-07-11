@@ -89,7 +89,7 @@ func TestResolveDid(t *testing.T) {
 
 	t.Run("Ed25519", func(t *testing.T) {
 		var d *io.DDO
-		d, err = c.ResolveDid(did)
+		d, err = c.ResolveDid("")
 		if err != nil {
 			t.Fatal(err)
 		}

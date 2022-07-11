@@ -176,8 +176,6 @@ github.com/ewangplay/gokv/hlfabric v0.0.0-20220706033222-bed619bd9a5d h1:3y8WcrQ
 github.com/ewangplay/gokv/hlfabric v0.0.0-20220706033222-bed619bd9a5d/go.mod h1:+gslPx2eXVQAyG+cimDer4dMNU4nQU+bKRJlDiSPHYE=
 github.com/ewangplay/rwriter v0.2.1 h1:kLoGGryOcsgRAA9hlv7jgG8lZvl0HCB0XnqJIpXjQGU=
 github.com/ewangplay/rwriter v0.2.1/go.mod h1:RtTuu4Hbfpn2pn1QiT2f6fCdy5nZo19gjo3DeOC+aco=
-github.com/ewangplay/serval/io v0.0.0-20220707065529-4259472a1d2b h1:HBym7h7f+KKL+1mwj085WRGHaWd0qcvME3CsbJWyDto=
-github.com/ewangplay/serval/io v0.0.0-20220707065529-4259472a1d2b/go.mod h1:lOk5UTaWPLoPTHLInMQSDXUIAflnCVfAoYoE/AL0XiI=
 github.com/ewangplay/serval/io v0.0.0-20220708082908-97367d7c4111 h1:gkcJV/hH6lZKDNcUbWw23PHPc/nqqFxvPDIZoRuTqdc=
 github.com/ewangplay/serval/io v0.0.0-20220708082908-97367d7c4111/go.mod h1:lOk5UTaWPLoPTHLInMQSDXUIAflnCVfAoYoE/AL0XiI=
 github.com/fatih/color v1.7.0/go.mod h1:Zm6kSWBoL9eyXnKyktHP6abPY2pDugNf5KwzbycvMj4=
@@ -345,6 +343,8 @@ github.com/influxdata/tdigest v0.0.0-20181121200506-bf2b5ad3c0a9/go.mod h1:Js0mq
 github.com/influxdata/usage-client v0.0.0-20160829180054-6d3895376368/go.mod h1:Wbbw6tYNvwa5dlB6304Sd+82Z3f7PmVZHVKU637d4po=
 github.com/jackpal/go-nat-pmp v1.0.2-0.20160603034137-1fa385a6f458/go.mod h1:QPH045xvCAeXUZOxsnwmrtiCoxIr9eob+4orBN1SBKc=
 github.com/jedisct1/go-minisign v0.0.0-20190909160543-45766022959e/go.mod h1:G1CVv03EnqU1wYL2dFwXxW2An0az9JTl/ZsqXQeBlkU=
+github.com/jerray/qsign v1.2.1 h1:EaCY2KLjpeWzS6EAKs2M0hV1y9ig88HS9sYyj9QdYqk=
+github.com/jerray/qsign v1.2.1/go.mod h1:oq0Nl2pImWYDbIbs2M3fXPyxKyPLnJEmyuIPHjHGfqY=
 github.com/jessevdk/go-flags v0.0.0-20141203071132-1679536dcc89/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=
 github.com/jessevdk/go-flags v1.4.0/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=
 github.com/jmespath/go-jmespath v0.4.0/go.mod h1:T8mJZnbsbmF+m6zOOFylbeCJqk5+pHWvzYPziyZiYoo=

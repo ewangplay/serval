@@ -15,18 +15,18 @@ const (
 func SuccResult(code int, data any, msg string, c *gin.Context) {
 	// 开始时间
 	c.JSON(http.StatusOK, io.Response{
-		code,
-		data,
-		msg,
+		Code: code,
+		Msg:  msg,
+		Data: data,
 	})
 }
 
 func FailResult(status int, code int, data any, msg string, c *gin.Context) {
 	// 开始时间
 	c.AbortWithStatusJSON(status, io.Response{
-		code,
-		data,
-		msg,
+		Code: code,
+		Msg:  msg,
+		Data: data,
 	})
 }
 

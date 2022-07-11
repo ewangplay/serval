@@ -1,6 +1,9 @@
 package io
 
 import (
+	"fmt"
+	"sort"
+	"strings"
 	"time"
 )
 
@@ -18,6 +21,42 @@ type PublicKey struct {
 	ID           string `json:"id"`
 	Type         string `json:"type"`
 	PublicKeyHex string `json:"publicKeyHex"`
+}
+
+type PublicKeyList []PublicKey
+
+func (kl PublicKeyList) Len() int           { return len(kl) }
+func (kl PublicKeyList) Swap(i, j int)      { kl[i], kl[j] = kl[j], kl[i] }
+func (kl PublicKeyList) Less(i, j int) bool { return strings.Compare(kl[i].ID, kl[j].ID) == -1 }
+
+func (kl PublicKeyList) MarshalQsign() string {
+	sort.Sort(kl)
+
+	s := "["
+	for i, k := range kl {
+		if i != 0 {
+			s += "|"
+		}
+		s += fmt.Sprintf("id=%s&publicKeyHex=%s&type=%s", k.ID, k.PublicKeyHex, k.Type)
+	}
+	s += "]"
+	return s
+}
+
+type StringList []string
+
+func (sl StringList) MarshalQsign() string {
+	sort.Strings(sl)
+
+	s := "["
+	for i, a := range sl {
+		if i != 0 {
+			s += "|"
+		}
+		s += a
+	}
+	s += "]"
+	return s
 }
 
 // ServiceType represents service type
@@ -39,17 +78,17 @@ type Proof struct {
 
 // DDO represents DID Document
 type DDO struct {
-	Context        string      `json:"@context"`
-	ID             string      `json:"id"`
-	Version        int8        `json:"version"`
-	PublicKey      []PublicKey `json:"publicKey"`
-	Controller     string      `json:"controller"`
-	Authentication []string    `json:"authentication"`
-	Recovery       []string    `json:"recovery"`
-	Service        []Service   `json:"service"`
-	Proof          Proof       `json:"proof"`
-	Created        time.Time   `json:"created"`
-	Updated        time.Time   `json:"updated"`
+	Context        string        `json:"@context" qsign:"-"`
+	ID             string        `json:"id"`
+	Version        int8          `json:"version"`
+	PublicKey      PublicKeyList `json:"publicKey"`
+	Controller     string        `json:"controller"`
+	Authentication StringList    `json:"authentication"`
+	Recovery       StringList    `json:"recovery"`
+	Service        []Service     `json:"service" qsign:"-"`
+	Proof          Proof         `json:"proof" qsign:"-"`
+	Created        time.Time     `json:"created" qsign:"-"`
+	Updated        time.Time     `json:"updated" qsign:"-"`
 }
 
 // CreateDidReq represents the CreateDid request body

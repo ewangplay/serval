@@ -9,6 +9,7 @@ require (
 	github.com/ewangplay/rwriter v0.2.1
 	github.com/ewangplay/serval/io v0.0.0-20220708082908-97367d7c4111
 	github.com/gin-gonic/gin v1.8.1
+	github.com/jerray/qsign v1.2.1
 	github.com/philippgille/gokv v0.6.0
 	github.com/philippgille/gokv/badgerdb v0.6.0
 	github.com/spf13/viper v1.12.0

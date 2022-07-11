@@ -64,6 +64,10 @@ func (c *Client) CreateDid(req *io.CreateDidReq) error {
 }
 
 func (c *Client) ResolveDid(did string) (*io.DDO, error) {
+	if did == "" {
+		return nil, fmt.Errorf("did cannot be empty")
+	}
+
 	url := fmt.Sprintf("http://%s/api/v1/did/resolve/%s", c.addr, did)
 
 	respBody, err := c.c.Get(url)
