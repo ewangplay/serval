@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -24,6 +25,10 @@ func CreateDid(c *gin.Context) {
 		return
 	}
 
+	// debug
+	data, _ := json.Marshal(req)
+	log.Debug("CreateDid request: %s", string(data))
+
 	// Set the DID/DDO record to store
 	err = store.Set(req.Did, req.Document)
 	if err != nil {
@@ -44,8 +49,6 @@ func parseCreateDidReq(c *gin.Context) (*io.CreateDidReq, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	log.Debug("Did: %v\nDocument: %v", req.Did, req.Document)
 
 	// Verify the DID document
 	valid, err := acl.VerifyDDO(&req.Document)
@@ -104,6 +107,10 @@ func RevokeDid(c *gin.Context) {
 		FailWithMessage(http.StatusBadRequest, errMsg, c)
 		return
 	}
+
+	// debug
+	data, _ := json.Marshal(req)
+	log.Debug("RevokeDid request: %s", string(data))
 
 	// Delete the DID/DDO record from store
 	err = store.Delete(req.Did)

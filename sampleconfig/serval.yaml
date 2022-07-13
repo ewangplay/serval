@@ -9,7 +9,7 @@ appKey:
 
 log:
     ## log verbosity level: debug, info, warn, error, fatal
-    level: info
+    level: debug
     ## path to log file
     path: "/Users/wangxiaohui/tmp/serval/log"
     ## max size per log file before rolling (megabytes)
