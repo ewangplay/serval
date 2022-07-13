@@ -105,9 +105,8 @@ type ResolveDidResp struct {
 
 // RevokeDidReq represents the ResolveDid request body
 type RevokeDidReq struct {
-	Did string `json:"did"`
-	// Signature to did using recovery prviate key, Base64 encoded
-	Signature string `json:"signature"`
+	Did   string `json:"did"`
+	Proof Proof  `json:"proof"`
 }
 
 // Response represents the response body

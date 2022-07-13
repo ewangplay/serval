@@ -83,6 +83,7 @@ func VerifyDDO(ddo *io.DDO) (valid bool, err error) {
 	if len(ddo.PublicKey) == 0 {
 		return false, fmt.Errorf("did document public key list invalid")
 	}
+
 	var pk io.PublicKey
 	hasPubKey := false
 	for _, pk = range ddo.PublicKey {
@@ -120,6 +121,51 @@ func VerifyDDO(ddo *io.DDO) (valid bool, err error) {
 		return
 	}
 	digest, err := gCSP.Hash(data, &cl.SHA256Opts{})
+	if err != nil {
+		return
+	}
+	return gCSP.Verify(k, digest, signature, nil)
+}
+
+func VerifyProof(did string, proof *io.Proof, ddo *io.DDO) (valid bool, err error) {
+
+	if len(ddo.PublicKey) == 0 {
+		return false, fmt.Errorf("did document public key list invalid")
+	}
+
+	var pk io.PublicKey
+	hasPubKey := false
+	for _, pk = range ddo.PublicKey {
+		if pk.ID == proof.Creator && pk.Type == proof.Type {
+			hasPubKey = true
+			break
+		}
+	}
+	if !hasPubKey {
+		return false, fmt.Errorf("did document recovery public key missing")
+	}
+
+	pubKeyBytes, err := hex.DecodeString(pk.PublicKeyHex)
+	if err != nil {
+		return false, fmt.Errorf("Decode public key for %s failed: %v", pk.ID, err)
+	}
+
+	var k cl.Key
+	switch pk.Type {
+	case cl.ED25519:
+		k = &cl.Ed25519PublicKey{
+			PubKey: pubKeyBytes,
+		}
+	default:
+		return false, fmt.Errorf("unsupported key type for did: %v", pk.Type)
+	}
+
+	signature, err := base64.StdEncoding.DecodeString(proof.SignatureValue)
+	if err != nil {
+		return false, fmt.Errorf("proof signature is invalid")
+	}
+
+	digest, err := gCSP.Hash([]byte(did), &cl.SHA256Opts{})
 	if err != nil {
 		return
 	}

@@ -131,14 +131,28 @@ func parseRevokeDidReq(c *gin.Context) (*io.RevokeDidReq, error) {
 		err = fmt.Errorf("The request parameter did cannot be empty")
 		return nil, err
 	}
-	if req.Signature == "" {
-		err = fmt.Errorf("The request parameter signature cannot be empty")
+	if req.Proof.Type == "" || req.Proof.Creator == "" || req.Proof.SignatureValue == "" {
+		err = fmt.Errorf("The request parameter proof is invalid")
 		return nil, err
 	}
 
-	// TODO: Verify the signature
-	// Client uses the recovery key to make the signature, so we must use the
-	// corresponding public key to verify the signature.
+	// Verify the proof
+	var ddo io.DDO
+	found, err := store.Get(req.Did, &ddo)
+	if err != nil {
+		return nil, err
+	}
+	if !found {
+		err = fmt.Errorf("did (%v) not found", req.Did)
+		return nil, err
+	}
+	valid, err := acl.VerifyProof(req.Did, &req.Proof, &ddo)
+	if err != nil {
+		return nil, err
+	}
+	if !valid {
+		return nil, fmt.Errorf("signature verifying failed")
+	}
 
 	return &req, nil
 }
