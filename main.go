@@ -7,9 +7,7 @@ import (
 	"os"
 
 	"github.com/ewangplay/rwriter"
-	cl "github.com/ewangplay/serval/adapter/cryptolib"
-	"github.com/ewangplay/serval/adapter/store"
-	st "github.com/ewangplay/serval/adapter/store"
+	"github.com/ewangplay/serval/adapter"
 	"github.com/ewangplay/serval/config"
 	"github.com/ewangplay/serval/log"
 	"github.com/ewangplay/serval/router"
@@ -58,28 +56,35 @@ func main() {
 	}
 
 	// Init Store
-	var opts store.Options
+	var opts adapter.StoreOptions
 	err = viper.UnmarshalKey("store", &opts)
 	if err != nil {
 		fmt.Printf("Read store options failed: %v\n", err)
 		os.Exit(1)
 	}
-	err = st.InitStore(&opts)
+	store, err := adapter.InitStore(&opts)
 	if err != nil {
 		fmt.Printf("Init store failed: %v\n", err)
 		os.Exit(1)
 	}
-	defer st.ReleaseStore()
+	defer store.Close()
 
 	// Init cryptolib
-	err = cl.InitCryptolib()
+	csp, err := adapter.InitCryptolib()
 	if err != nil {
 		fmt.Printf("Init cryptolib failed: %v\n", err)
 		os.Exit(1)
 	}
 
+	// Init Qsign
+	qsign, err := adapter.InitQsign()
+	if err != nil {
+		fmt.Printf("Init Qsign failed: %v\n", err)
+		os.Exit(1)
+	}
+
 	// Init router
-	r := router.InitRouter(w)
+	r := router.InitRouter(w, store, csp, qsign)
 
 	// listen and serve on 0.0.0.0:<port>
 	r.Run(fmt.Sprintf(":%s", viper.GetString("server.port")))

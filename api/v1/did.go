@@ -5,15 +5,14 @@ import (
 	"fmt"
 	"net/http"
 
-	acl "github.com/ewangplay/serval/adapter/cryptolib"
-	"github.com/ewangplay/serval/adapter/store"
+	ctx "github.com/ewangplay/serval/context"
 	"github.com/ewangplay/serval/io"
 	"github.com/ewangplay/serval/log"
-	"github.com/gin-gonic/gin"
+	"github.com/ewangplay/serval/utils"
 )
 
 // CreateDid handles the /api/v1/did/create request to create a DID
-func CreateDid(c *gin.Context) {
+func CreateDid(c *ctx.Context) {
 	var err error
 
 	// Parse the request body
@@ -21,7 +20,7 @@ func CreateDid(c *gin.Context) {
 	if err != nil {
 		errMsg := fmt.Sprintf("Parse the request body failed: %v", err)
 		log.Error(errMsg)
-		FailWithMessage(http.StatusBadRequest, errMsg, c)
+		FailWithMessage(http.StatusBadRequest, errMsg, c.Context)
 		return
 	}
 
@@ -30,18 +29,18 @@ func CreateDid(c *gin.Context) {
 	log.Debug("CreateDid request: %s", string(data))
 
 	// Set the DID/DDO record to store
-	err = store.Set(req.Did, req.Document)
+	err = c.Store.Set(req.Did, req.Document)
 	if err != nil {
 		errMsg := fmt.Sprintf("Set the DID/DDO record to store failed: %v", err)
 		log.Error(errMsg)
-		FailWithMessage(http.StatusInternalServerError, errMsg, c)
+		FailWithMessage(http.StatusInternalServerError, errMsg, c.Context)
 		return
 	}
 
-	Ok(c)
+	Ok(c.Context)
 }
 
-func parseCreateDidReq(c *gin.Context) (*io.CreateDidReq, error) {
+func parseCreateDidReq(c *ctx.Context) (*io.CreateDidReq, error) {
 	var err error
 	var req io.CreateDidReq
 
@@ -51,12 +50,9 @@ func parseCreateDidReq(c *gin.Context) (*io.CreateDidReq, error) {
 	}
 
 	// Verify the DID document
-	valid, err := acl.VerifyDDO(&req.Document)
+	err = utils.VerifyDDO(c.CSP, c.Qsign, &req.Document)
 	if err != nil {
 		return nil, err
-	}
-	if !valid {
-		return nil, fmt.Errorf("signature verifying failed")
 	}
 
 	return &req, nil
@@ -64,23 +60,23 @@ func parseCreateDidReq(c *gin.Context) (*io.CreateDidReq, error) {
 
 // ResolveDid handles the /api/v1/did/resolve request to resolve a DID
 // Request URL: http://IP:Port/api/v1/did/resolve/:did
-func ResolveDid(c *gin.Context) {
+func ResolveDid(c *ctx.Context) {
 	// Retrieve did from path param
 	did := c.Param("did")
 
 	// Get the DID/DDO record from store
 	var ddo io.DDO
-	found, err := store.Get(did, &ddo)
+	found, err := c.Store.Get(did, &ddo)
 	if err != nil {
 		errMsg := fmt.Sprintf("Get the DID/DDO (%v) record from store failed: %v", did, err)
 		log.Error(errMsg)
-		FailWithMessage(http.StatusInternalServerError, errMsg, c)
+		FailWithMessage(http.StatusInternalServerError, errMsg, c.Context)
 		return
 	}
 	if !found {
 		errMsg := fmt.Sprintf("Did %v not found", did)
 		log.Error(errMsg)
-		FailWithMessage(http.StatusInternalServerError, errMsg, c)
+		FailWithMessage(http.StatusInternalServerError, errMsg, c.Context)
 		return
 	}
 
@@ -92,11 +88,11 @@ func ResolveDid(c *gin.Context) {
 
 	log.Debug("ResolveDid response: %v", resp)
 
-	OkWithData(resp, c)
+	OkWithData(resp, c.Context)
 }
 
 // RevokeDid handles the /api/v1/did/revoke request to revoke a DID
-func RevokeDid(c *gin.Context) {
+func RevokeDid(c *ctx.Context) {
 	var err error
 
 	// Parse the request body
@@ -104,7 +100,7 @@ func RevokeDid(c *gin.Context) {
 	if err != nil {
 		errMsg := fmt.Sprintf("Parse the request body failed: %v", err)
 		log.Error(errMsg)
-		FailWithMessage(http.StatusBadRequest, errMsg, c)
+		FailWithMessage(http.StatusBadRequest, errMsg, c.Context)
 		return
 	}
 
@@ -113,18 +109,18 @@ func RevokeDid(c *gin.Context) {
 	log.Debug("RevokeDid request: %s", string(data))
 
 	// Delete the DID/DDO record from store
-	err = store.Delete(req.Did)
+	err = c.Store.Delete(req.Did)
 	if err != nil {
 		errMsg := fmt.Sprintf("Delete the DID/DDO (%s) record from store failed: %v", req.Did, err)
 		log.Error(errMsg)
-		FailWithMessage(http.StatusInternalServerError, errMsg, c)
+		FailWithMessage(http.StatusInternalServerError, errMsg, c.Context)
 		return
 	}
 
-	Ok(c)
+	Ok(c.Context)
 }
 
-func parseRevokeDidReq(c *gin.Context) (*io.RevokeDidReq, error) {
+func parseRevokeDidReq(c *ctx.Context) (*io.RevokeDidReq, error) {
 	var err error
 	var req io.RevokeDidReq
 
@@ -145,7 +141,7 @@ func parseRevokeDidReq(c *gin.Context) (*io.RevokeDidReq, error) {
 
 	// Verify the proof
 	var ddo io.DDO
-	found, err := store.Get(req.Did, &ddo)
+	found, err := c.Store.Get(req.Did, &ddo)
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +149,7 @@ func parseRevokeDidReq(c *gin.Context) (*io.RevokeDidReq, error) {
 		err = fmt.Errorf("did (%v) not found", req.Did)
 		return nil, err
 	}
-	valid, err := acl.VerifyProof(req.Did, &req.Proof, &ddo)
+	valid, err := utils.VerifyProof(c.CSP, req.Did, &req.Proof, &ddo)
 	if err != nil {
 		return nil, err
 	}
