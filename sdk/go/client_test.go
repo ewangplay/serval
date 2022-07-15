@@ -66,11 +66,11 @@ func newClient(t *testing.T) *sdk.Client {
 	return c
 }
 
-func TestCreateDid(t *testing.T) {
+func TestClient(t *testing.T) {
 	var err error
 	c := newClient(t)
 
-	t.Run("Ed25519", func(t *testing.T) {
+	t.Run("CreateDid", func(t *testing.T) {
 		var document io.DDO
 		err = json.Unmarshal([]byte(ddoJson), &document)
 		if err != nil {
@@ -88,7 +88,7 @@ func TestCreateDid(t *testing.T) {
 		}
 	})
 
-	t.Run("Ed25519", func(t *testing.T) {
+	t.Run("ResolveDid", func(t *testing.T) {
 		var d *io.DDO
 		d, err = c.ResolveDid(did)
 		if err != nil {
@@ -99,7 +99,7 @@ func TestCreateDid(t *testing.T) {
 		}
 	})
 
-	t.Run("Ed25519", func(t *testing.T) {
+	t.Run("RevokeDid", func(t *testing.T) {
 		var proof io.Proof
 		err = json.Unmarshal([]byte(proofJson), &proof)
 		if err != nil {

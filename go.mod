@@ -26,6 +26,7 @@ require (
 	github.com/dgryski/go-farm v0.0.0-20190423205320-6a90982ecee2 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/ethereum/go-ethereum v1.10.11 // indirect
+	github.com/ewangplay/serval/utils v0.0.0-20220714091755-8d810224ad5c // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-kit/kit v0.8.0 // indirect

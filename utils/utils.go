@@ -72,16 +72,23 @@ func SignDDO(csp cl.CSP, qs *qsign.Qsign, keyID string, key cl.Key, ddo *didio.D
 }
 
 func VerifyDDO(csp cl.CSP, qs *qsign.Qsign, ddo *didio.DDO) (err error) {
+	if csp == nil {
+		return fmt.Errorf("CSP provider is nil")
+	}
+	if qs == nil {
+		return fmt.Errorf("Qsign instance is nil")
+	}
 	if ddo == nil {
-		return fmt.Errorf("did document is nil")
+		return fmt.Errorf("DID document is nil")
 	}
 	if ddo.Proof.Type == "" || ddo.Proof.Creator == "" || ddo.Proof.SignatureValue == "" {
-		return fmt.Errorf("did document proof invalid")
+		return fmt.Errorf("The proof of the DID document is missing")
 	}
 	if len(ddo.PublicKey) == 0 {
-		return fmt.Errorf("did document public key list invalid")
+		return fmt.Errorf("The public key list of the DID document is missing")
 	}
 
+	// Retrieve the public key corresponding to the signature
 	var pk didio.PublicKey
 	hasPubKey := false
 	for _, pk = range ddo.PublicKey {
@@ -91,12 +98,12 @@ func VerifyDDO(csp cl.CSP, qs *qsign.Qsign, ddo *didio.DDO) (err error) {
 		}
 	}
 	if !hasPubKey {
-		return fmt.Errorf("did document proof public key missing")
+		return fmt.Errorf("The public key corresponding to the signature is missing")
 	}
 
 	pubKeyBytes, err := hex.DecodeString(pk.PublicKeyHex)
 	if err != nil {
-		return fmt.Errorf("Decode public key for %s failed: %v", pk.ID, err)
+		return fmt.Errorf("Decode the public key (%s) failed: %v", pk.ID, err)
 	}
 
 	var k cl.Key
@@ -106,14 +113,16 @@ func VerifyDDO(csp cl.CSP, qs *qsign.Qsign, ddo *didio.DDO) (err error) {
 			PubKey: pubKeyBytes,
 		}
 	default:
-		return fmt.Errorf("unsupported key type for did: %v", pk.Type)
+		return fmt.Errorf("unsupported key type: %v", pk.Type)
 	}
 
+	// Decode the signature of the DID document
 	signature, err := base64.StdEncoding.DecodeString(ddo.Proof.SignatureValue)
 	if err != nil {
-		return fmt.Errorf("did document proof signature invalid")
+		return fmt.Errorf("The signature of the DID document is invalid")
 	}
 
+	// Verifying the signature of the DID document
 	data, err := qs.Digest(ddo)
 	if err != nil {
 		return err
@@ -127,7 +136,7 @@ func VerifyDDO(csp cl.CSP, qs *qsign.Qsign, ddo *didio.DDO) (err error) {
 		return err
 	}
 	if !valid {
-		return fmt.Errorf("signature verifying failed")
+		return fmt.Errorf("Verifying the signature of the DID document failed")
 	}
 
 	return nil

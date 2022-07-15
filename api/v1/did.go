@@ -68,13 +68,22 @@ func ResolveDid(c *ctx.Context) {
 	var ddo io.DDO
 	found, err := c.Store.Get(did, &ddo)
 	if err != nil {
-		errMsg := fmt.Sprintf("Get the DID/DDO (%v) record from store failed: %v", did, err)
+		errMsg := fmt.Sprintf("Failed to retrieve the DID document (%v) from store: %v", did, err)
 		log.Error(errMsg)
 		FailWithMessage(http.StatusInternalServerError, errMsg, c.Context)
 		return
 	}
 	if !found {
-		errMsg := fmt.Sprintf("Did %v not found", did)
+		errMsg := fmt.Sprintf("DID document (%v) not found", did)
+		log.Error(errMsg)
+		FailWithMessage(http.StatusInternalServerError, errMsg, c.Context)
+		return
+	}
+
+	// Verify the DID document
+	err = utils.VerifyDDO(c.CSP, c.Qsign, &ddo)
+	if err != nil {
+		errMsg := fmt.Sprintf("Failed to verify the DID document (%v): %v", did, err)
 		log.Error(errMsg)
 		FailWithMessage(http.StatusInternalServerError, errMsg, c.Context)
 		return
@@ -131,11 +140,11 @@ func parseRevokeDidReq(c *ctx.Context) (*io.RevokeDidReq, error) {
 
 	// Check the params
 	if req.Did == "" {
-		err = fmt.Errorf("The request parameter did cannot be empty")
+		err = fmt.Errorf("The DID parameter cannot be empty")
 		return nil, err
 	}
 	if req.Proof.Type == "" || req.Proof.Creator == "" || req.Proof.SignatureValue == "" {
-		err = fmt.Errorf("The request parameter proof is invalid")
+		err = fmt.Errorf("The Proof parameter cannot be empty")
 		return nil, err
 	}
 
@@ -146,15 +155,22 @@ func parseRevokeDidReq(c *ctx.Context) (*io.RevokeDidReq, error) {
 		return nil, err
 	}
 	if !found {
-		err = fmt.Errorf("did (%v) not found", req.Did)
+		err = fmt.Errorf("DID document (%v) not found", req.Did)
 		return nil, err
 	}
+
+	// Verify the DID document
+	err = utils.VerifyDDO(c.CSP, c.Qsign, &ddo)
+	if err != nil {
+		return nil, err
+	}
+
 	valid, err := utils.VerifyProof(c.CSP, req.Did, &req.Proof, &ddo)
 	if err != nil {
 		return nil, err
 	}
 	if !valid {
-		return nil, fmt.Errorf("signature verifying failed")
+		return nil, fmt.Errorf("Failed to verify the signature of the Proof")
 	}
 
 	return &req, nil
